@@ -7,7 +7,17 @@ import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, type WorkOrder } from '@/types'
+import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, type WorkOrder, type WorkOrderStatus } from '@/types'
+
+const STATUS_LEFT_BORDER: Record<WorkOrderStatus, string> = {
+  recibida:         'border-l-gray-300',
+  presupuestada:    'border-l-yellow-400',
+  aceptada:         'border-l-blue-400',
+  esperando_piezas: 'border-l-orange-400',
+  en_reparacion:    'border-l-purple-400',
+  lista:            'border-l-green-500',
+  entregada:        'border-l-slate-300',
+}
 
 interface DashboardStats {
   activeOrders: number
@@ -127,14 +137,12 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {kpis.map(kpi => (
           <Card key={kpi.label}>
-            <CardContent className="pt-5 pb-4 flex items-center gap-3">
-              <div className={`p-2 rounded-full shrink-0 ${kpi.bg}`}>
-                <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
+            <CardContent className="pt-5 pb-5">
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center mb-3 ${kpi.bg}`}>
+                <kpi.icon className={`h-4.5 w-4.5 h-[18px] w-[18px] ${kpi.color}`} />
               </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground truncate">{kpi.label}</p>
-                <p className={`text-xl font-bold truncate ${kpi.color}`}>{kpi.value}</p>
-              </div>
+              <p className={`text-2xl font-bold leading-tight ${kpi.color}`}>{kpi.value}</p>
+              <p className="text-xs text-muted-foreground mt-1">{kpi.label}</p>
             </CardContent>
           </Card>
         ))}
@@ -156,16 +164,16 @@ export default function DashboardPage() {
           ) : recentOrders.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">Sin órdenes todavía.</p>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-2">
               {recentOrders.map(order => (
                 <button
                   key={order.id}
                   onClick={() => navigate(`/ordenes/${order.id}`)}
-                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-muted/50 transition-colors text-left"
+                  className={`w-full flex items-center justify-between pl-4 pr-3 py-3 rounded-lg border border-l-4 bg-card hover:bg-muted/40 transition-colors text-left ${STATUS_LEFT_BORDER[order.status]}`}
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{order.order_number}</p>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-sm font-semibold">{order.order_number}</p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
                       {order.client?.name ?? '—'} · {formatDate(order.created_at)}
                     </p>
                   </div>
