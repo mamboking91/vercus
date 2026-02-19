@@ -131,7 +131,9 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <PageHeader title="Dashboard" description="Resumen del taller" />
+      <div className="hidden md:block">
+        <PageHeader title="Dashboard" description="Resumen del taller" />
+      </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileText, ChevronRight } from 'lucide-react'
+import { FileText, ChevronRight, Plus } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -39,6 +39,13 @@ export default function PresupuestosListPage() {
       <PageHeader
         title="Presupuestos"
         description={`${quotes.length} presupuesto${quotes.length !== 1 ? 's' : ''}`}
+        action={
+          <Button size="sm" onClick={() => navigate('/ordenes/nueva')}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            <span className="hidden sm:inline">Nuevo presupuesto</span>
+            <span className="sm:hidden">Nuevo</span>
+          </Button>
+        }
       />
 
       {/* Filtros de estado */}
