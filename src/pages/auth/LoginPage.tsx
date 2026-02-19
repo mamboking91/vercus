@@ -1,17 +1,25 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Wrench } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 import { toast } from '@/hooks/use-toast'
 
 export default function LoginPage() {
+  const navigate = useNavigate()
+  const { session, loading: authLoading } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Si ya tiene sesión activa, redirigir al dashboard
+  useEffect(() => {
+    if (!authLoading && session) navigate('/', { replace: true })
+  }, [session, authLoading])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -19,6 +27,8 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       toast({ title: 'Error al iniciar sesión', description: error.message, variant: 'destructive' })
+    } else {
+      navigate('/', { replace: true })
     }
     setLoading(false)
   }
