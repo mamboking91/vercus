@@ -10,11 +10,11 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, type WorkOrder, type WorkOrderStatus } from '@/types'
 
 const STATUS_LEFT_BORDER: Record<WorkOrderStatus, string> = {
-  recibida:         'border-l-gray-300',
+  recibida:         'border-l-sky-400',
   presupuestada:    'border-l-yellow-400',
-  aceptada:         'border-l-blue-400',
+  aceptada:         'border-l-blue-500',
   esperando_piezas: 'border-l-orange-400',
-  en_reparacion:    'border-l-purple-400',
+  en_reparacion:    'border-l-violet-500',
   lista:            'border-l-green-500',
   entregada:        'border-l-slate-300',
 }

@@ -58,10 +58,10 @@ function EconomicSummary({ totalParts, totalLabor, totalPaid, orderId }: {
   const navigate = useNavigate()
 
   return (
-    <Card className="sticky bottom-4 shadow-lg border-2">
+    <Card className="sticky bottom-24 md:bottom-4 shadow-lg border-2">
       <CardContent className="pt-4 pb-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex gap-6 flex-wrap text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex gap-3 sm:gap-6 flex-wrap text-sm">
             <div>
               <p className="text-xs text-muted-foreground">Piezas</p>
               <p className="font-semibold">{formatCurrency(totalParts)}</p>
@@ -482,24 +482,28 @@ export default function OrdenDetallePage() {
           )}
 
           {/* Estado y botones de avance */}
-          <div className="pt-3 border-t flex flex-wrap items-center gap-3">
-            <Badge className={`${ORDER_STATUS_COLORS[order.status]} text-sm px-3 py-1`}>
-              {ORDER_STATUS_LABELS[order.status]}
-            </Badge>
-            <div className="flex gap-2 ml-auto flex-wrap">
-              {prevStatus && (
-                <Button variant="outline" size="sm" onClick={() => setConfirmStatus(prevStatus)}>
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  {ORDER_STATUS_LABELS[prevStatus]}
-                </Button>
-              )}
-              {nextStatus && (
-                <Button size="sm" onClick={() => setConfirmStatus(nextStatus)}>
-                  {ORDER_STATUS_LABELS[nextStatus]}
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              )}
+          <div className="pt-3 border-t space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Badge className={`${ORDER_STATUS_COLORS[order.status]} text-sm px-3 py-1`}>
+                {ORDER_STATUS_LABELS[order.status]}
+              </Badge>
             </div>
+            {(prevStatus || nextStatus) && (
+              <div className="flex gap-2 flex-wrap">
+                {prevStatus && (
+                  <Button variant="outline" size="sm" onClick={() => setConfirmStatus(prevStatus)}>
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    {ORDER_STATUS_LABELS[prevStatus]}
+                  </Button>
+                )}
+                {nextStatus && (
+                  <Button size="sm" onClick={() => setConfirmStatus(nextStatus)}>
+                    {ORDER_STATUS_LABELS[nextStatus]}
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Timeline del estado */}

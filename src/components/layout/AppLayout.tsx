@@ -16,7 +16,7 @@ export function AppLayout() {
             <span className="text-base font-bold tracking-tight">Vercus</span>
           </div>
         </header>
-        <div className="flex-1 p-4 md:p-8 pb-20 md:pb-8 max-w-7xl mx-auto w-full">
+        <div className="flex-1 p-4 md:p-8 pb-24 md:pb-8 max-w-7xl mx-auto w-full">
           <Outlet />
         </div>
       </main>

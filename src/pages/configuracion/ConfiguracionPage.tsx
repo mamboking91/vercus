@@ -331,12 +331,13 @@ function TiposManoObraTab() {
 
   return (
     <div className="space-y-4 max-w-xl">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <p className="text-sm text-muted-foreground flex-1">
           Define los tipos de trabajo y sus tarifas horarias. Se usarán al añadir mano de obra a las órdenes.
         </p>
         <Button
           size="sm"
+          className="self-start sm:self-auto shrink-0"
           onClick={() => { setEditing(null); setDialogOpen(true) }}
         >
           <Plus className="h-4 w-4 mr-1" /> Añadir tipo
@@ -433,9 +434,9 @@ export default function ConfiguracionPage() {
         description="Datos del taller y parámetros de trabajo"
       />
       <Tabs defaultValue="taller">
-        <TabsList className="mb-6">
-          <TabsTrigger value="taller">Datos del taller</TabsTrigger>
-          <TabsTrigger value="manoobra">Tipos de mano de obra</TabsTrigger>
+        <TabsList className="mb-6 flex w-full sm:inline-flex sm:w-auto">
+          <TabsTrigger value="taller" className="flex-1 sm:flex-none">Datos del taller</TabsTrigger>
+          <TabsTrigger value="manoobra" className="flex-1 sm:flex-none text-xs sm:text-sm">Tipos mano de obra</TabsTrigger>
         </TabsList>
 
         <TabsContent value="taller">

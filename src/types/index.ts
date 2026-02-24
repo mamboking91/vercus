@@ -181,13 +181,13 @@ export const ORDER_STATUS_LABELS: Record<WorkOrderStatus, string> = {
 }
 
 export const ORDER_STATUS_COLORS: Record<WorkOrderStatus, string> = {
-  recibida: 'bg-gray-100 text-gray-700',
-  presupuestada: 'bg-yellow-100 text-yellow-800',
-  aceptada: 'bg-blue-100 text-blue-800',
+  recibida:         'bg-sky-100 text-sky-700',
+  presupuestada:    'bg-yellow-100 text-yellow-800',
+  aceptada:         'bg-blue-100 text-blue-800',
   esperando_piezas: 'bg-orange-100 text-orange-800',
-  en_reparacion: 'bg-purple-100 text-purple-800',
-  lista: 'bg-green-100 text-green-800',
-  entregada: 'bg-slate-100 text-slate-600',
+  en_reparacion:    'bg-violet-100 text-violet-800',
+  lista:            'bg-green-100 text-green-800',
+  entregada:        'bg-slate-100 text-slate-500',
 }
 
 export const ORDER_STATUS_FLOW: WorkOrderStatus[] = [
