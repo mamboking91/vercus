@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CatalogSearchDialog } from './CatalogSearchDialog'
 import { type WorkOrderPart, type PartsCatalogItem } from '@/types'
+import { formatCurrency } from '@/lib/utils'
 
 interface Props {
   open: boolean
@@ -109,7 +110,7 @@ export function PartDialog({ open, onClose, onSave, workOrderId, initial }: Prop
 
             {total > 0 && (
               <p className="text-sm text-right text-muted-foreground">
-                Total: <span className="font-semibold text-foreground">{total.toFixed(2)} €</span>
+                Total: <span className="font-semibold text-foreground">{formatCurrency(total)}</span>
               </p>
             )}
 

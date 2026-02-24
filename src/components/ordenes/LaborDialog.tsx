@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useLaborTypes } from '@/hooks/useLaborTypes'
 import { type WorkOrderLabor } from '@/types'
+import { formatCurrency } from '@/lib/utils'
 
 interface Props {
   open: boolean
@@ -115,7 +116,7 @@ export function LaborDialog({ open, onClose, onSave, workOrderId, initial }: Pro
 
           {total > 0 && (
             <p className="text-sm text-right text-muted-foreground">
-              Total: <span className="font-semibold text-foreground">{total.toFixed(2)} €</span>
+              Total: <span className="font-semibold text-foreground">{formatCurrency(total)}</span>
             </p>
           )}
 

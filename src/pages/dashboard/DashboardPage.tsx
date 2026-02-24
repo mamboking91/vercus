@@ -80,17 +80,21 @@ export default function DashboardPage() {
     const activeIds = orders.map(o => o.id)
     let pendingAmount = 0
     if (activeIds.length > 0) {
-      const [partsRes, laborRes, allPaymentsRes] = await Promise.all([
-        supabase.from('work_order_parts').select('quantity, unit_price, work_order_id').in('work_order_id', activeIds),
-        supabase.from('work_order_labor').select('hours, unit_rate, work_order_id').in('work_order_id', activeIds),
-        supabase.from('payments').select('amount, work_order_id').in('work_order_id', activeIds),
-      ])
-      const totalBilled = [
-        ...(partsRes.data ?? []).map((p: { quantity: number; unit_price: number }) => p.quantity * p.unit_price),
-        ...(laborRes.data ?? []).map((l: { hours: number; unit_rate: number }) => l.hours * l.unit_rate),
-      ].reduce((s, v) => s + v, 0)
-      const totalPaid = (allPaymentsRes.data ?? []).reduce((s: number, p: { amount: number }) => s + p.amount, 0)
-      pendingAmount = Math.max(0, totalBilled - totalPaid)
+      try {
+        const [partsRes, laborRes, allPaymentsRes] = await Promise.all([
+          supabase.from('work_order_parts').select('quantity, unit_price, work_order_id').in('work_order_id', activeIds),
+          supabase.from('work_order_labor').select('hours, unit_rate, work_order_id').in('work_order_id', activeIds),
+          supabase.from('payments').select('amount, work_order_id').in('work_order_id', activeIds),
+        ])
+        const totalBilled = [
+          ...(partsRes.data ?? []).map((p: { quantity: number; unit_price: number }) => p.quantity * p.unit_price),
+          ...(laborRes.data ?? []).map((l: { hours: number; unit_rate: number }) => l.hours * l.unit_rate),
+        ].reduce((s, v) => s + v, 0)
+        const totalPaid = (allPaymentsRes.data ?? []).reduce((s: number, p: { amount: number }) => s + p.amount, 0)
+        pendingAmount = Math.max(0, totalBilled - totalPaid)
+      } catch {
+        pendingAmount = 0
+      }
     }
 
     setStats({ activeOrders, readyOrders, monthRevenue, pendingAmount })
@@ -141,7 +145,7 @@ export default function DashboardPage() {
           <Card key={kpi.label}>
             <CardContent className="pt-5 pb-5">
               <div className={`w-9 h-9 rounded-full flex items-center justify-center mb-3 ${kpi.bg}`}>
-                <kpi.icon className={`h-4.5 w-4.5 h-[18px] w-[18px] ${kpi.color}`} />
+                <kpi.icon className={`h-[18px] w-[18px] ${kpi.color}`} />
               </div>
               <p className={`text-2xl font-bold leading-tight ${kpi.color}`}>{kpi.value}</p>
               <p className="text-xs text-muted-foreground mt-1">{kpi.label}</p>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Plus, Search, Pencil, Trash2, BookOpen } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -30,24 +30,14 @@ function PartFormDialog({ open, onClose, onSave, initial }: PartFormDialogProps)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
 
-  useState(() => {
+  useEffect(() => {
     if (open) {
       setForm(initial
         ? { code: initial.code ?? '', brand: initial.brand ?? '', description: initial.description, sell_price: String(initial.sell_price), notes: initial.notes ?? '' }
         : emptyForm
       )
     }
-  })
-
-  // Resetear al abrir
-  const [lastOpen, setLastOpen] = useState(false)
-  if (open !== lastOpen) {
-    setLastOpen(open)
-    if (open) setForm(initial
-      ? { code: initial.code ?? '', brand: initial.brand ?? '', description: initial.description, sell_price: String(initial.sell_price), notes: initial.notes ?? '' }
-      : emptyForm
-    )
-  }
+  }, [open, initial])
 
   function setField(key: string, value: string) {
     setForm(prev => ({ ...prev, [key]: value }))

@@ -16,9 +16,10 @@ interface PaymentDialogProps {
   open: boolean
   onClose: () => void
   onAdd: (values: { amount: number; date: string; method: PaymentMethod; notes?: string | null }) => Promise<void>
+  pending: number
 }
 
-function PaymentDialog({ open, onClose, onAdd }: PaymentDialogProps) {
+function PaymentDialog({ open, onClose, onAdd, pending }: PaymentDialogProps) {
   const today = new Date().toISOString().split('T')[0]
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(today)
@@ -45,8 +46,13 @@ function PaymentDialog({ open, onClose, onAdd }: PaymentDialogProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label htmlFor="pay-amount">Importe (€) <span className="text-destructive">*</span></Label>
-            <Input id="pay-amount" type="number" min="0.01" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" required autoFocus />
+            <div className="flex items-center justify-between">
+              <Label htmlFor="pay-amount">Importe (€) <span className="text-destructive">*</span></Label>
+              {pending > 0 && (
+                <span className="text-xs text-muted-foreground">Pendiente: <strong>{formatCurrency(pending)}</strong></span>
+              )}
+            </div>
+            <Input id="pay-amount" type="number" min="0.01" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} placeholder={pending > 0 ? String(pending) : '0.00'} required autoFocus />
           </div>
           <div className="space-y-2">
             <Label htmlFor="pay-date">Fecha</Label>
@@ -134,10 +140,10 @@ export function PaymentsTab({ workOrderId, totalAmount }: Props) {
       ) : (
         <div className="space-y-2">
           {payments.map(p => (
-            <div key={p.id} className="flex items-center justify-between rounded-lg border px-4 py-3">
-              <div>
+            <div key={p.id} className="flex items-center justify-between rounded-lg border px-4 py-3 gap-3">
+              <div className="min-w-0 flex-1">
                 <p className="font-semibold text-sm">{formatCurrency(p.amount)}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground truncate">
                   {formatDate(p.date)} · {PAYMENT_METHOD_LABELS[p.method]}
                   {p.notes ? ` · ${p.notes}` : ''}
                 </p>
@@ -150,7 +156,7 @@ export function PaymentsTab({ workOrderId, totalAmount }: Props) {
         </div>
       )}
 
-      <PaymentDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onAdd={handleAdd} />
+      <PaymentDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onAdd={handleAdd} pending={pending} />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={v => !v && setDeleteTarget(null)}>
         <AlertDialogContent>
