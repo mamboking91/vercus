@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Search } from 'lucide-react'
+import { Search, ExternalLink } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { supabase } from '@/lib/supabase'
@@ -73,22 +73,35 @@ export function CatalogSearchDialog({ open, onClose, onSelect }: Props) {
               </p>
             ) : (
               results.map(part => (
-                <button
-                  key={part.id}
-                  type="button"
-                  onClick={() => { onSelect(part); onClose() }}
-                  className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-accent text-left transition-colors"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{part.description}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {[part.code, part.brand].filter(Boolean).join(' · ')}
-                    </p>
-                  </div>
-                  <span className="text-sm font-semibold text-primary ml-3 shrink-0">
-                    {formatCurrency(part.sell_price)}
-                  </span>
-                </button>
+                <div key={part.id} className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => { onSelect(part); onClose() }}
+                    className="flex-1 flex items-center justify-between p-3 rounded-lg hover:bg-accent text-left transition-colors min-w-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{part.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {[part.code, part.brand].filter(Boolean).join(' · ')}
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-primary ml-3 shrink-0">
+                      {formatCurrency(part.sell_price)}
+                    </span>
+                  </button>
+                  {part.url && (
+                    <a
+                      href={part.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Ver en proveedor"
+                      className="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent text-muted-foreground hover:text-primary transition-colors"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  )}
+                </div>
               ))
             )}
           </div>

@@ -76,6 +76,7 @@ export interface PartsCatalogItem {
   description: string
   sell_price: number
   notes: string | null
+  url: string | null
   created_at: string
 }
 

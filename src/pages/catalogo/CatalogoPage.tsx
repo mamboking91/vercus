@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Plus, Search, Pencil, Trash2, BookOpen } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, BookOpen, ExternalLink } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,7 +24,7 @@ interface PartFormDialogProps {
   initial?: PartsCatalogItem | null
 }
 
-const emptyForm = { code: '', brand: '', description: '', sell_price: '', notes: '' }
+const emptyForm = { code: '', brand: '', description: '', sell_price: '', notes: '', url: '' }
 
 function PartFormDialog({ open, onClose, onSave, initial }: PartFormDialogProps) {
   const [form, setForm] = useState(emptyForm)
@@ -33,7 +33,7 @@ function PartFormDialog({ open, onClose, onSave, initial }: PartFormDialogProps)
   useEffect(() => {
     if (open) {
       setForm(initial
-        ? { code: initial.code ?? '', brand: initial.brand ?? '', description: initial.description, sell_price: String(initial.sell_price), notes: initial.notes ?? '' }
+        ? { code: initial.code ?? '', brand: initial.brand ?? '', description: initial.description, sell_price: String(initial.sell_price), notes: initial.notes ?? '', url: initial.url ?? '' }
         : emptyForm
       )
     }
@@ -54,6 +54,7 @@ function PartFormDialog({ open, onClose, onSave, initial }: PartFormDialogProps)
       description: form.description.trim(),
       sell_price,
       notes: form.notes.trim() || null,
+      url: form.url.trim() || null,
     })
     setSaving(false)
     onClose()
@@ -87,6 +88,10 @@ function PartFormDialog({ open, onClose, onSave, initial }: PartFormDialogProps)
           <div className="space-y-2">
             <Label htmlFor="cat-notes">Notas</Label>
             <Textarea id="cat-notes" value={form.notes} onChange={e => setField('notes', e.target.value)} placeholder="Observaciones, proveedor, etc." rows={2} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cat-url">URL del proveedor</Label>
+            <Input id="cat-url" type="url" value={form.url} onChange={e => setField('url', e.target.value)} placeholder="https://www.proveedor.com/pieza" />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
@@ -208,6 +213,7 @@ export default function CatalogoPage() {
                 <TableHead className="hidden sm:table-cell">Código</TableHead>
                 <TableHead className="hidden sm:table-cell">Marca</TableHead>
                 <TableHead className="text-right">P. venta</TableHead>
+                <TableHead className="w-8 hidden sm:table-cell"></TableHead>
                 <TableHead className="w-20"></TableHead>
               </TableRow>
             </TableHeader>
@@ -217,14 +223,26 @@ export default function CatalogoPage() {
                   <TableCell>
                     <p className="font-medium text-sm">{part.description}</p>
                     {part.notes && <p className="text-xs text-muted-foreground truncate max-w-xs">{part.notes}</p>}
-                    {/* En móvil mostramos código y marca bajo la descripción */}
+                    {/* En móvil mostramos código, marca y URL bajo la descripción */}
                     <p className="text-xs text-muted-foreground sm:hidden">
                       {[part.code, part.brand].filter(Boolean).join(' · ')}
                     </p>
+                    {part.url && (
+                      <a href={part.url} target="_blank" rel="noopener noreferrer" className="sm:hidden inline-flex items-center gap-1 text-xs text-primary hover:underline" onClick={e => e.stopPropagation()}>
+                        <ExternalLink className="h-3 w-3" />Ver proveedor
+                      </a>
+                    )}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell text-sm font-mono text-muted-foreground">{part.code ?? '—'}</TableCell>
                   <TableCell className="hidden sm:table-cell text-sm">{part.brand ?? '—'}</TableCell>
                   <TableCell className="text-right font-semibold text-sm">{formatCurrency(part.sell_price)}</TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    {part.url && (
+                      <a href={part.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent text-muted-foreground hover:text-primary transition-colors" title="Ver en proveedor">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <div className="flex gap-1 justify-end">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditing(part); setDialogOpen(true) }}>
