@@ -1,11 +1,7 @@
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
-export type MachineType =
-  | 'tractor'
-  | 'motosierra'
-  | 'desbrozadora'
-  | 'electrica'
-  | 'otro'
+/** @deprecated – use MachineTypeRecord from DB instead */
+export type MachineType = string
 
 export type WorkOrderStatus =
   | 'recibida'
@@ -59,6 +55,16 @@ export interface Machine {
   created_at: string
   // joined
   client?: Client
+}
+
+export interface MachineTypeRecord {
+  id: string
+  user_id: string
+  slug: string
+  name: string
+  icon: string
+  color: string
+  created_at: string
 }
 
 export interface LaborType {

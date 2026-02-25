@@ -12,9 +12,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useSettings } from '@/hooks/useSettings'
 import { useLaborTypes } from '@/hooks/useLaborTypes'
+import { useMachineTypesContext } from '@/contexts/MachineTypesContext'
+import { ICON_OPTIONS, COLOR_OPTIONS, ICON_MAP, COLOR_MAP } from '@/components/maquinas/MachineTypeBadge'
 import { toast } from '@/hooks/use-toast'
 import { formatCurrency } from '@/lib/utils'
-import { type LaborType, type IvaRate } from '@/types'
+import { type LaborType, type MachineTypeRecord, type IvaRate } from '@/types'
 
 // ─── Tab: Datos del taller ───────────────────────────────────────────────────
 
@@ -424,6 +426,256 @@ function TiposManoObraTab() {
   )
 }
 
+// ─── Dialog: Crear / Editar tipo de máquina ───────────────────────────────────
+
+interface MachineTypeDialogProps {
+  open: boolean
+  onClose: () => void
+  onSave: (values: { name: string; icon: string; color: string }) => Promise<void>
+  initial?: MachineTypeRecord | null
+}
+
+function MachineTypeDialog({ open, onClose, onSave, initial }: MachineTypeDialogProps) {
+  const [name, setName] = useState('')
+  const [icon, setIcon] = useState('wrench')
+  const [color, setColor] = useState('slate')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setName(initial?.name ?? '')
+      setIcon(initial?.icon ?? 'wrench')
+      setColor(initial?.color ?? 'slate')
+    }
+  }, [open, initial])
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!name.trim()) {
+      toast({ title: 'El nombre es obligatorio', variant: 'destructive' })
+      return
+    }
+    setSaving(true)
+    await onSave({ name: name.trim(), icon, color })
+    setSaving(false)
+    onClose()
+  }
+
+  const PreviewIcon = ICON_MAP[icon] ?? ICON_MAP['wrench']
+  const previewClass = COLOR_MAP[color] ?? 'bg-slate-100 text-slate-600'
+
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{initial ? 'Editar tipo de máquina' : 'Nuevo tipo de máquina'}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-5 py-2">
+          {/* Nombre */}
+          <div className="space-y-2">
+            <Label htmlFor="mt-name">Nombre <span className="text-destructive">*</span></Label>
+            <Input
+              id="mt-name"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Cortacésped"
+              autoFocus
+            />
+          </div>
+
+          {/* Vista previa */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Vista previa:</span>
+            <span className={`inline-flex items-center gap-1 rounded-full text-xs px-2.5 py-1 font-medium ${previewClass}`}>
+              <PreviewIcon className="h-3.5 w-3.5" />
+              {name || 'Nombre'}
+            </span>
+          </div>
+
+          {/* Icono */}
+          <div className="space-y-2">
+            <Label>Icono</Label>
+            <div className="grid grid-cols-5 gap-1.5">
+              {ICON_OPTIONS.map(({ id, Icon, label }) => (
+                <button
+                  key={id}
+                  type="button"
+                  title={label}
+                  onClick={() => setIcon(id)}
+                  className={`flex flex-col items-center justify-center gap-1 p-2 rounded-lg border-2 transition-colors text-xs ${
+                    icon === id
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border hover:border-primary/40 text-muted-foreground'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="truncate w-full text-center leading-tight">{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Color */}
+          <div className="space-y-2">
+            <Label>Color</Label>
+            <div className="flex flex-wrap gap-2">
+              {COLOR_OPTIONS.map(({ id, className, label }) => (
+                <button
+                  key={id}
+                  type="button"
+                  title={label}
+                  onClick={() => setColor(id)}
+                  className={`h-7 w-7 rounded-full border-2 transition-all ${className} ${
+                    color === id
+                      ? 'border-foreground ring-2 ring-foreground ring-offset-2 scale-110'
+                      : 'border-transparent hover:scale-105'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Guardando…' : initial ? 'Guardar cambios' : 'Crear tipo'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ─── Tab: Tipos de máquina ────────────────────────────────────────────────────
+
+function TiposMaquinaTab() {
+  const { machineTypes, loading, createMachineType, updateMachineType, deleteMachineType } = useMachineTypesContext()
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editing, setEditing] = useState<MachineTypeRecord | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<MachineTypeRecord | null>(null)
+
+  async function handleSave(values: { name: string; icon: string; color: string }) {
+    if (editing) {
+      const { error } = await updateMachineType(editing.id, values)
+      if (error) toast({ title: 'Error al guardar', description: error, variant: 'destructive' })
+      else toast({ title: 'Tipo actualizado' })
+    } else {
+      const { error } = await createMachineType(values)
+      if (error) toast({ title: 'Error al crear', description: error, variant: 'destructive' })
+      else toast({ title: 'Tipo creado' })
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return
+    const { error } = await deleteMachineType(deleteTarget.id)
+    if (error) toast({ title: 'Error al eliminar', description: error, variant: 'destructive' })
+    else toast({ title: 'Tipo eliminado' })
+    setDeleteTarget(null)
+  }
+
+  return (
+    <div className="space-y-4 max-w-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <p className="text-sm text-muted-foreground flex-1">
+          Define los tipos de máquina con su icono y color. Se usan al crear o editar máquinas.
+        </p>
+        <Button
+          size="sm"
+          className="self-start sm:self-auto shrink-0"
+          onClick={() => { setEditing(null); setDialogOpen(true) }}
+        >
+          <Plus className="h-4 w-4 mr-1" /> Añadir tipo
+        </Button>
+      </div>
+
+      {loading ? (
+        <p className="text-sm text-muted-foreground py-8 text-center">Cargando…</p>
+      ) : machineTypes.length === 0 ? (
+        <Card>
+          <CardContent className="py-10 text-center">
+            <p className="text-sm text-muted-foreground">No hay tipos de máquina.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tipo</TableHead>
+                <TableHead className="text-muted-foreground text-xs font-normal w-28">Identificador</TableHead>
+                <TableHead className="w-20"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {machineTypes.map(mt => {
+                const Icon = ICON_MAP[mt.icon] ?? ICON_MAP['wrench']
+                const cls = COLOR_MAP[mt.color] ?? 'bg-slate-100 text-slate-600'
+                return (
+                  <TableRow key={mt.id}>
+                    <TableCell>
+                      <span className={`inline-flex items-center gap-1.5 rounded-full text-xs px-2.5 py-1 font-medium ${cls}`}>
+                        <Icon className="h-3.5 w-3.5" />
+                        {mt.name}
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{mt.slug}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1 justify-end">
+                        <Button
+                          variant="ghost" size="icon"
+                          onClick={() => { setEditing(mt); setDialogOpen(true) }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setDeleteTarget(mt)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+
+      <MachineTypeDialog
+        open={dialogOpen}
+        onClose={() => { setDialogOpen(false); setEditing(null) }}
+        onSave={handleSave}
+        initial={editing}
+      />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={v => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar tipo de máquina?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará <strong>{deleteTarget?.name}</strong>. Las máquinas existentes que lo usen mantendrán su tipo actual.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDelete}
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  )
+}
+
 // ─── Página principal ─────────────────────────────────────────────────────────
 
 export default function ConfiguracionPage() {
@@ -434,9 +686,10 @@ export default function ConfiguracionPage() {
         description="Datos del taller y parámetros de trabajo"
       />
       <Tabs defaultValue="taller">
-        <TabsList className="mb-6 flex w-full sm:inline-flex sm:w-auto">
+        <TabsList className="mb-6 flex w-full sm:inline-flex sm:w-auto overflow-x-auto">
           <TabsTrigger value="taller" className="flex-1 sm:flex-none">Datos del taller</TabsTrigger>
           <TabsTrigger value="manoobra" className="flex-1 sm:flex-none text-xs sm:text-sm">Tipos mano de obra</TabsTrigger>
+          <TabsTrigger value="maquinas" className="flex-1 sm:flex-none text-xs sm:text-sm">Tipos de máquina</TabsTrigger>
         </TabsList>
 
         <TabsContent value="taller">
@@ -459,6 +712,18 @@ export default function ConfiguracionPage() {
             </CardHeader>
             <CardContent>
               <TiposManoObraTab />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="maquinas">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Tipos de máquina</CardTitle>
+              <CardDescription>Personaliza los tipos con icono y color. Se usarán al registrar máquinas.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TiposMaquinaTab />
             </CardContent>
           </Card>
         </TabsContent>

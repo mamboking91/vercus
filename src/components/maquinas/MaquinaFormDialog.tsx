@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { type Machine, type MachineType, MACHINE_TYPE_LABELS } from '@/types'
+import { useMachineTypesContext } from '@/contexts/MachineTypesContext'
+import { ICON_MAP, COLOR_MAP } from '@/components/maquinas/MachineTypeBadge'
+import { type Machine } from '@/types'
 
 interface Props {
   open: boolean
@@ -15,9 +17,10 @@ interface Props {
   initial?: Machine | null
 }
 
-const empty = { brand: '', model: '', serial_number: '', type: 'otro' as MachineType, notes: '' }
+const empty = { brand: '', model: '', serial_number: '', type: 'otro', notes: '' }
 
 export function MaquinaFormDialog({ open, onClose, onSave, clientId, initial }: Props) {
+  const { machineTypes } = useMachineTypesContext()
   const [form, setForm] = useState(empty)
   const [saving, setSaving] = useState(false)
 
@@ -49,6 +52,8 @@ export function MaquinaFormDialog({ open, onClose, onSave, clientId, initial }: 
     onClose()
   }
 
+  const selectedType = machineTypes.find(t => t.slug === form.type)
+
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
       <DialogContent className="max-w-md">
@@ -61,12 +66,38 @@ export function MaquinaFormDialog({ open, onClose, onSave, clientId, initial }: 
             <Label>Tipo de máquina <span className="text-destructive">*</span></Label>
             <Select value={form.type} onValueChange={v => setField('type', v)}>
               <SelectTrigger>
-                <SelectValue />
+                {selectedType ? (
+                  <span className="flex items-center gap-2">
+                    {(() => {
+                      const Icon = ICON_MAP[selectedType.icon] ?? ICON_MAP['wrench']
+                      const cls = COLOR_MAP[selectedType.color] ?? 'bg-slate-100 text-slate-600'
+                      return (
+                        <span className={`inline-flex items-center gap-1 rounded-full text-xs px-2 py-0.5 font-medium ${cls}`}>
+                          <Icon className="h-3 w-3" />
+                        </span>
+                      )
+                    })()}
+                    {selectedType.name}
+                  </span>
+                ) : (
+                  <SelectValue placeholder="Seleccionar tipo…" />
+                )}
               </SelectTrigger>
               <SelectContent>
-                {(Object.entries(MACHINE_TYPE_LABELS) as [MachineType, string][]).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                ))}
+                {machineTypes.map(mt => {
+                  const Icon = ICON_MAP[mt.icon] ?? ICON_MAP['wrench']
+                  const cls = COLOR_MAP[mt.color] ?? 'bg-slate-100 text-slate-600'
+                  return (
+                    <SelectItem key={mt.slug} value={mt.slug}>
+                      <span className="flex items-center gap-2">
+                        <span className={`inline-flex items-center gap-1 rounded-full text-xs px-2 py-0.5 font-medium ${cls}`}>
+                          <Icon className="h-3 w-3" />
+                        </span>
+                        {mt.name}
+                      </span>
+                    </SelectItem>
+                  )
+                })}
               </SelectContent>
             </Select>
           </div>
