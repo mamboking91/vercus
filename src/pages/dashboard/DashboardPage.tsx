@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, type WorkOrder, type WorkOrderStatus } from '@/types'
+import { MachineTypeBadge } from '@/components/maquinas/MachineTypeBadge'
 
 const STATUS_LEFT_BORDER: Record<WorkOrderStatus, string> = {
   recibida:         'border-l-sky-400',
@@ -53,10 +54,10 @@ export default function DashboardPage() {
         .eq('user_id', userId)
         .neq('status', 'entregada'),
 
-      // 8 most recent orders with client join
+      // 8 most recent orders with client + machine join
       supabase
         .from('work_orders')
-        .select('*, client:clients(id, name)')
+        .select('*, client:clients(id, name), machine:machines(id, brand, model, type)')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(8),
@@ -178,9 +179,16 @@ export default function DashboardPage() {
                   className={`w-full flex items-center justify-between pl-4 pr-3 py-3 rounded-lg border border-l-4 bg-card hover:bg-muted/40 transition-colors text-left ${STATUS_LEFT_BORDER[order.status]}`}
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">{order.order_number}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-semibold">{order.order_number}</p>
+                      {order.machine && <MachineTypeBadge type={order.machine.type} />}
+                    </div>
                     <p className="text-xs text-muted-foreground truncate mt-0.5">
-                      {order.client?.name ?? '—'} · {formatDate(order.created_at)}
+                      {order.client?.name ?? '—'}
+                      {order.machine && (order.machine.brand || order.machine.model)
+                        ? ` · ${[order.machine.brand, order.machine.model].filter(Boolean).join(' ')}`
+                        : ''}
+                      {' · '}{formatDate(order.created_at)}
                     </p>
                   </div>
                   <span className={`ml-3 shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${ORDER_STATUS_COLORS[order.status]}`}>

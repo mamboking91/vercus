@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
 import { formatDate } from '@/lib/utils'
 import { type Machine, type WorkOrder, MACHINE_TYPE_LABELS, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/types'
+import { MachineTypeBadge } from '@/components/maquinas/MachineTypeBadge'
 
 export default function MaquinasPage() {
   const { id } = useParams<{ id: string }>()
@@ -80,7 +81,7 @@ export default function MaquinasPage() {
         )}
         <PageHeader
           title={machineName}
-          description={MACHINE_TYPE_LABELS[machine.type]}
+          description={<MachineTypeBadge type={machine.type} size="md" />}
           action={
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
               <Pencil className="h-4 w-4 mr-1" />Editar
@@ -95,7 +96,7 @@ export default function MaquinasPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
             <div>
               <p className="text-xs text-muted-foreground mb-1">Tipo</p>
-              <p className="font-medium">{MACHINE_TYPE_LABELS[machine.type]}</p>
+              <MachineTypeBadge type={machine.type} size="md" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-1">Marca</p>

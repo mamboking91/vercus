@@ -1,12 +1,14 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FileText, ChevronRight, Plus } from 'lucide-react'
+import { FileText, ChevronRight, Plus, Pencil, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { useQuotes } from '@/hooks/useQuotes'
+import { toast } from '@/hooks/use-toast'
 import { formatDate } from '@/lib/utils'
-import { type QuoteStatus } from '@/types'
+import { type Quote, type QuoteStatus } from '@/types'
 
 const STATUS_LABELS: Record<QuoteStatus, string> = {
   borrador: 'Borrador',
@@ -26,8 +28,17 @@ const ALL_STATUSES: QuoteStatus[] = ['borrador', 'enviado', 'aceptado', 'rechaza
 
 export default function PresupuestosListPage() {
   const navigate = useNavigate()
-  const { quotes, loading } = useQuotes()
+  const { quotes, loading, deleteQuote } = useQuotes()
   const [statusFilter, setStatusFilter] = useState<QuoteStatus | 'todos'>('todos')
+  const [deleteTarget, setDeleteTarget] = useState<Quote | null>(null)
+
+  async function handleDelete() {
+    if (!deleteTarget) return
+    const { error } = await deleteQuote(deleteTarget.id)
+    if (error) toast({ title: 'Error al eliminar', description: error, variant: 'destructive' })
+    else toast({ title: 'Presupuesto eliminado' })
+    setDeleteTarget(null)
+  }
 
   const filtered = useMemo(() => {
     if (statusFilter === 'todos') return quotes
@@ -104,32 +115,72 @@ export default function PresupuestosListPage() {
       ) : (
         <div className="space-y-2">
           {filtered.map(quote => (
-            <button
+            <div
               key={quote.id}
-              onClick={() => navigate(`/presupuestos/${quote.id}`)}
-              className="w-full text-left rounded-lg border bg-card px-4 py-3 hover:bg-muted/40 transition-colors flex items-center justify-between gap-4"
+              className="flex items-center rounded-lg border bg-card hover:bg-muted/40 transition-colors"
             >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="font-semibold text-sm">{quote.quote_number}</span>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[quote.status]}`}>
-                    {STATUS_LABELS[quote.status]}
-                  </span>
+              {/* Área principal clickable */}
+              <div
+                onClick={() => navigate(`/presupuestos/${quote.id}`)}
+                className="flex items-center justify-between flex-1 px-4 py-3 cursor-pointer gap-4 min-w-0"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="font-semibold text-sm">{quote.quote_number}</span>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[quote.status]}`}>
+                      {STATUS_LABELS[quote.status]}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {quote.work_order?.client?.name ?? '—'}
+                    {quote.work_order?.order_number ? ` · ${quote.work_order.order_number}` : ''}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {formatDate(quote.created_at)}
+                    {quote.include_iva ? ` · IGIC ${quote.iva_rate}%` : ' · Sin IGIC'}
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground truncate">
-                  {quote.work_order?.client?.name ?? '—'}
-                  {quote.work_order?.order_number ? ` · ${quote.work_order.order_number}` : ''}
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {formatDate(quote.created_at)}
-                  {quote.include_iva ? ` · IGIC ${quote.iva_rate}%` : ' · Sin IGIC'}
-                </p>
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-            </button>
+              {/* Acciones rápidas */}
+              <div className="flex items-center gap-0.5 pr-2 shrink-0">
+                <Button
+                  variant="ghost" size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  onClick={e => { e.stopPropagation(); navigate(`/presupuestos/${quote.id}`) }}
+                  title="Ver / Editar"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost" size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  onClick={e => { e.stopPropagation(); setDeleteTarget(quote) }}
+                  title="Eliminar"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
           ))}
         </div>
       )}
+      <AlertDialog open={!!deleteTarget} onOpenChange={v => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar presupuesto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará <strong>{deleteTarget?.quote_number}</strong>. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleDelete}>
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

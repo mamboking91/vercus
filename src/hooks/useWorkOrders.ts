@@ -120,6 +120,16 @@ export function useWorkOrders(filters: Filters = {}) {
     return { error: error?.message ?? null }
   }
 
+  async function deleteOrder(id: string) {
+    const { error } = await supabase
+      .from('work_orders')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user!.id)
+    if (!error) setOrders(prev => prev.filter(o => o.id !== id))
+    return { error: error?.message ?? null }
+  }
+
   async function getOrder(id: string): Promise<WorkOrder | null> {
     const { data } = await supabase
       .from('work_orders')
@@ -130,5 +140,5 @@ export function useWorkOrders(filters: Filters = {}) {
     return data as WorkOrder | null
   }
 
-  return { orders, loading, createOrder, updateOrder, updateOrderStatus, getOrder, refetch: fetchOrders }
+  return { orders, loading, createOrder, updateOrder, updateOrderStatus, deleteOrder, getOrder, refetch: fetchOrders }
 }

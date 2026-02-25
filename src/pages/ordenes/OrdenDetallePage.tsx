@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Pencil, Plus, Trash2, ChevronRight, ChevronLeft, FileText } from 'lucide-react'
-import { PageHeader } from '@/components/layout/PageHeader'
+import { ArrowLeft, Pencil, Plus, Trash2, ChevronRight, ChevronLeft, FileText, User, Wrench } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { PartDialog } from '@/components/ordenes/PartDialog'
 import { LaborDialog } from '@/components/ordenes/LaborDialog'
 import { PaymentsTab } from '@/components/ordenes/PaymentsTab'
+import { MachineTypeBadge } from '@/components/maquinas/MachineTypeBadge'
 import { useWorkOrders } from '@/hooks/useWorkOrders'
 import { useWorkOrderParts } from '@/hooks/useWorkOrderParts'
 import { useWorkOrderLabor } from '@/hooks/useWorkOrderLabor'
@@ -24,7 +24,7 @@ import { toast } from '@/hooks/use-toast'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
 import {
   type WorkOrder, type WorkOrderPart, type WorkOrderLabor, type WorkOrderStatusLog, type QuoteStatus,
-  ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_STATUS_FLOW, MACHINE_TYPE_LABELS,
+  ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_STATUS_FLOW,
 } from '@/types'
 
 const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {
@@ -37,8 +37,6 @@ const QUOTE_STATUS_COLORS: Record<QuoteStatus, string> = {
   rechazado: 'bg-red-100 text-red-800',
 }
 
-// ─── Helpers de estado ────────────────────────────────────────────────────────
-
 function getNextStatus(current: WorkOrder['status']) {
   const idx = ORDER_STATUS_FLOW.indexOf(current)
   return idx < ORDER_STATUS_FLOW.length - 1 ? ORDER_STATUS_FLOW[idx + 1] : null
@@ -48,55 +46,7 @@ function getPrevStatus(current: WorkOrder['status']) {
   return idx > 0 ? ORDER_STATUS_FLOW[idx - 1] : null
 }
 
-// ─── Resumen económico (sticky) ───────────────────────────────────────────────
-
-function EconomicSummary({ totalParts, totalLabor, totalPaid, orderId }: {
-  totalParts: number; totalLabor: number; totalPaid: number; orderId: string
-}) {
-  const total = totalParts + totalLabor
-  const pending = Math.max(0, total - totalPaid)
-  const navigate = useNavigate()
-
-  return (
-    <Card className="sticky bottom-24 md:bottom-4 shadow-lg border-2">
-      <CardContent className="pt-4 pb-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex gap-3 sm:gap-6 flex-wrap text-sm">
-            <div>
-              <p className="text-xs text-muted-foreground">Piezas</p>
-              <p className="font-semibold">{formatCurrency(totalParts)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Mano de obra</p>
-              <p className="font-semibold">{formatCurrency(totalLabor)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Total bruto</p>
-              <p className="font-bold text-base">{formatCurrency(total)}</p>
-            </div>
-            {totalPaid > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground">Cobrado</p>
-                <p className="font-semibold text-green-600">{formatCurrency(totalPaid)}</p>
-              </div>
-            )}
-            {pending > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground">Pendiente</p>
-                <p className="font-bold text-base text-destructive">{formatCurrency(pending)}</p>
-              </div>
-            )}
-          </div>
-          <Button size="sm" variant="outline" onClick={() => navigate(`/presupuestos/nuevo?orden=${orderId}`)}>
-            <FileText className="h-4 w-4 mr-2" />Generar presupuesto
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-// ─── Tab: Piezas ─────────────────────────────────────────────────────────────
+// ─── Tab: Piezas ──────────────────────────────────────────────────────────────
 
 function PiezasTab({ workOrderId }: { workOrderId: string }) {
   const { parts, loading, addPart, updatePart, deletePart } = useWorkOrderParts(workOrderId)
@@ -131,7 +81,6 @@ function PiezasTab({ workOrderId }: { workOrderId: string }) {
           <Plus className="h-4 w-4 mr-1" />Añadir pieza
         </Button>
       </div>
-
       {parts.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-8">Sin piezas añadidas.</p>
       ) : (
@@ -161,7 +110,6 @@ function PiezasTab({ workOrderId }: { workOrderId: string }) {
           </div>
         </div>
       )}
-
       <PartDialog
         open={dialogOpen}
         onClose={() => { setDialogOpen(false); setEditing(null) }}
@@ -220,7 +168,6 @@ function ManoObraTab({ workOrderId }: { workOrderId: string }) {
           <Plus className="h-4 w-4 mr-1" />Añadir mano de obra
         </Button>
       </div>
-
       {laborEntries.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-8">Sin mano de obra registrada.</p>
       ) : (
@@ -228,9 +175,7 @@ function ManoObraTab({ workOrderId }: { workOrderId: string }) {
           {laborEntries.map(entry => (
             <div key={entry.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium truncate">
-                  {entry.labor_type?.name ?? 'Mano de obra'}
-                </p>
+                <p className="text-sm font-medium truncate">{entry.labor_type?.name ?? 'Mano de obra'}</p>
                 <p className="text-xs text-muted-foreground">
                   {entry.hours}h × {formatCurrency(entry.unit_rate)}/h
                   {entry.description ? ` · ${entry.description}` : ''}
@@ -252,7 +197,6 @@ function ManoObraTab({ workOrderId }: { workOrderId: string }) {
           </div>
         </div>
       )}
-
       <LaborDialog
         open={dialogOpen}
         onClose={() => { setDialogOpen(false); setEditing(null) }}
@@ -276,7 +220,7 @@ function ManoObraTab({ workOrderId }: { workOrderId: string }) {
   )
 }
 
-// ─── Dialog: Editar datos de la orden ─────────────────────────────────────────
+// ─── Dialog: Editar datos de la orden ────────────────────────────────────────
 
 function EditOrderDialog({ order, open, onClose, onSave }: {
   order: WorkOrder; open: boolean; onClose: () => void
@@ -376,7 +320,7 @@ export default function OrdenDetallePage() {
     } else {
       setOrder(prev => prev ? { ...prev, status: toStatus } : prev)
       fetchStatusLog()
-      toast({ title: `Estado actualizado: ${ORDER_STATUS_LABELS[toStatus]}` })
+      toast({ title: `Estado: ${ORDER_STATUS_LABELS[toStatus]}` })
     }
     setConfirmStatus(null)
   }
@@ -408,187 +352,275 @@ export default function OrdenDetallePage() {
 
   const nextStatus = getNextStatus(order.status)
   const prevStatus = getPrevStatus(order.status)
+  const total = totalParts + totalLabor
+  const pending = Math.max(0, total - totalPaid)
 
   return (
-    <div className="space-y-6">
-      {/* Breadcrumb */}
-      <div>
-        <Button variant="ghost" size="sm" className="mb-3 -ml-2 text-muted-foreground" onClick={() => navigate('/ordenes')}>
-          <ArrowLeft className="h-4 w-4 mr-1" />Órdenes
-        </Button>
-        <PageHeader
-          title={order.order_number}
-          action={
-            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-              <Pencil className="h-4 w-4 mr-1" />Editar
-            </Button>
-          }
-        />
+    <div>
+      {/* Cabecera */}
+      <Button variant="ghost" size="sm" className="mb-3 -ml-2 text-muted-foreground" onClick={() => navigate('/ordenes')}>
+        <ArrowLeft className="h-4 w-4 mr-1" />Órdenes
+      </Button>
+
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <h1 className="text-xl md:text-2xl font-bold tracking-tight">{order.order_number}</h1>
+        <div className="flex gap-2 shrink-0">
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+            <Pencil className="h-3.5 w-3.5 mr-1.5" />
+            <span className="hidden sm:inline">Editar</span>
+          </Button>
+          <Button size="sm" onClick={() => navigate(`/presupuestos/nuevo?orden=${id}`)}>
+            <FileText className="h-3.5 w-3.5 mr-1.5" />
+            <span className="hidden sm:inline">Presupuesto</span>
+          </Button>
+        </div>
       </div>
 
-      {/* Info + Estado */}
-      <Card>
-        <CardContent className="pt-6 space-y-4">
-          {/* Cabecera con cliente/máquina */}
-          <div className="flex flex-wrap gap-4 text-sm">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Cliente</p>
-              {order.client ? (
-                <Link to={`/clientes/${order.client_id}`} className="font-medium hover:underline text-primary">
-                  {order.client.name}
-                </Link>
-              ) : <span className="text-muted-foreground">—</span>}
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Máquina</p>
-              {order.machine ? (
-                <Link to={`/maquinas/${order.machine_id}`} className="font-medium hover:underline text-primary">
-                  {[order.machine.brand, order.machine.model].filter(Boolean).join(' ')}
-                  {' '}
-                  <span className="text-muted-foreground font-normal">({MACHINE_TYPE_LABELS[order.machine.type]})</span>
-                </Link>
-              ) : <span className="text-muted-foreground">—</span>}
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Entrada</p>
-              <p className="font-medium">{formatDate(order.created_at)}</p>
-            </div>
-            {order.estimated_delivery && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Entrega estimada</p>
-                <p className="font-medium">{formatDate(order.estimated_delivery)}</p>
+      {/* Layout dos columnas */}
+      <div className="flex flex-col lg:grid lg:grid-cols-[1fr_300px] lg:items-start gap-5">
+
+        {/* ── LEFT: Trabajo + Presupuestos ── */}
+        <div className="space-y-5">
+
+          {/* Tabs: Piezas / Mano de obra / Pagos */}
+          <Card>
+            <CardHeader className="pb-0">
+              <CardTitle className="text-base">Detalle del trabajo</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <Tabs defaultValue="piezas">
+                <TabsList className="mb-4 w-full sm:w-auto">
+                  <TabsTrigger value="piezas" className="flex-1 sm:flex-none">Piezas</TabsTrigger>
+                  <TabsTrigger value="labor" className="flex-1 sm:flex-none">Mano de obra</TabsTrigger>
+                  <TabsTrigger value="pagos" className="flex-1 sm:flex-none">Pagos</TabsTrigger>
+                </TabsList>
+                <TabsContent value="piezas"><PiezasTab workOrderId={id!} /></TabsContent>
+                <TabsContent value="labor"><ManoObraTab workOrderId={id!} /></TabsContent>
+                <TabsContent value="pagos"><PaymentsTab workOrderId={id!} totalAmount={total} /></TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+
+          {/* Presupuestos */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FileText className="h-4 w-4" />Presupuestos
+                </CardTitle>
+                <Button size="sm" variant="outline" onClick={() => navigate(`/presupuestos/nuevo?orden=${id}`)}>
+                  <Plus className="h-4 w-4 mr-1" />Nuevo
+                </Button>
               </div>
-            )}
-          </div>
+            </CardHeader>
+            <CardContent>
+              {quotes.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">Sin presupuestos generados.</p>
+              ) : (
+                <div className="space-y-2">
+                  {quotes.map(q => (
+                    <button
+                      key={q.id}
+                      onClick={() => navigate(`/presupuestos/${q.id}`)}
+                      className="w-full text-left flex items-center justify-between rounded-lg border px-4 py-2.5 hover:bg-muted/40 transition-colors"
+                    >
+                      <div>
+                        <span className="text-sm font-medium mr-2">{q.quote_number}</span>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${QUOTE_STATUS_COLORS[q.status]}`}>
+                          {QUOTE_STATUS_LABELS[q.status]}
+                        </span>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {formatDate(q.created_at)}
+                          {q.include_iva ? ` · IGIC ${q.iva_rate}%` : ' · Sin IGIC'}
+                        </p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-          {/* Descripción y diagnóstico */}
-          {order.problem_description && (
-            <div className="pt-3 border-t">
-              <p className="text-xs text-muted-foreground mb-1">Problema</p>
-              <p className="text-sm">{order.problem_description}</p>
-            </div>
-          )}
-          {order.diagnosis && (
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Diagnóstico</p>
-              <p className="text-sm">{order.diagnosis}</p>
-            </div>
-          )}
-          {order.internal_notes && (
-            <div className="p-3 bg-muted/50 rounded-md">
-              <p className="text-xs text-muted-foreground mb-1">Notas internas</p>
-              <p className="text-sm">{order.internal_notes}</p>
-            </div>
-          )}
+        </div>
 
-          {/* Estado y botones de avance */}
-          <div className="pt-3 border-t space-y-2">
-            <div className="flex items-center justify-between gap-2">
+        {/* ── RIGHT: Cliente + Máquina + Estado + Resumen + Detalles + Historial ── */}
+        <div className="space-y-4">
+
+          {/* Cliente */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5 text-muted-foreground" />Cliente
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-0.5">
+              {order.client ? (
+                <>
+                  <Link to={`/clientes/${order.client_id}`} className="text-sm font-medium hover:underline text-primary">
+                    {order.client.name}
+                  </Link>
+                  {order.client.phone && <p className="text-xs text-muted-foreground">{order.client.phone}</p>}
+                  {order.client.email && <p className="text-xs text-muted-foreground">{order.client.email}</p>}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">—</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Máquina */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-1.5">
+                <Wrench className="h-3.5 w-3.5 text-muted-foreground" />Máquina
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {order.machine ? (
+                <div className="space-y-1.5">
+                  <MachineTypeBadge type={order.machine.type} />
+                  {(order.machine.brand || order.machine.model) && (
+                    <Link to={`/maquinas/${order.machine_id}`} className="block text-sm font-medium hover:underline text-primary">
+                      {[order.machine.brand, order.machine.model].filter(Boolean).join(' ')}
+                    </Link>
+                  )}
+                  {order.machine.serial_number && (
+                    <p className="text-xs text-muted-foreground font-mono">S/N: {order.machine.serial_number}</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Sin máquina asignada</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Estado */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Estado</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-3">
               <Badge className={`${ORDER_STATUS_COLORS[order.status]} text-sm px-3 py-1`}>
                 {ORDER_STATUS_LABELS[order.status]}
               </Badge>
-            </div>
-            {(prevStatus || nextStatus) && (
-              <div className="flex gap-2 flex-wrap">
-                {prevStatus && (
-                  <Button variant="outline" size="sm" onClick={() => setConfirmStatus(prevStatus)}>
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    {ORDER_STATUS_LABELS[prevStatus]}
-                  </Button>
-                )}
-                {nextStatus && (
-                  <Button size="sm" onClick={() => setConfirmStatus(nextStatus)}>
-                    {ORDER_STATUS_LABELS[nextStatus]}
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
+              {(prevStatus || nextStatus) && (
+                <div className="flex gap-2 flex-wrap">
+                  {prevStatus && (
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => setConfirmStatus(prevStatus)}>
+                      <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+                      {ORDER_STATUS_LABELS[prevStatus]}
+                    </Button>
+                  )}
+                  {nextStatus && (
+                    <Button size="sm" className="flex-1" onClick={() => setConfirmStatus(nextStatus)}>
+                      {ORDER_STATUS_LABELS[nextStatus]}
+                      <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-          {/* Timeline del estado */}
+          {/* Resumen económico */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Resumen económico</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Piezas</span>
+                <span>{formatCurrency(totalParts)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Mano de obra</span>
+                <span>{formatCurrency(totalLabor)}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-sm border-t pt-2">
+                <span>Total bruto</span>
+                <span>{formatCurrency(total)}</span>
+              </div>
+              {totalPaid > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Cobrado</span>
+                  <span className="text-green-600 font-medium">{formatCurrency(totalPaid)}</span>
+                </div>
+              )}
+              {pending > 0 && (
+                <div className="flex justify-between text-sm font-semibold">
+                  <span>Pendiente</span>
+                  <span className="text-destructive">{formatCurrency(pending)}</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Detalles de la orden */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Detalles</CardTitle>
+                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => setEditOpen(true)}>
+                  <Pencil className="h-3 w-3" />Editar
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-3 text-sm">
+              <div className="flex justify-between gap-2">
+                <span className="text-muted-foreground shrink-0">Entrada</span>
+                <span className="font-medium text-right">{formatDate(order.created_at)}</span>
+              </div>
+              {order.estimated_delivery && (
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground shrink-0">Entrega est.</span>
+                  <span className="font-medium text-right">{formatDate(order.estimated_delivery)}</span>
+                </div>
+              )}
+              {order.problem_description && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground mb-1">Problema</p>
+                  <p className="text-sm">{order.problem_description}</p>
+                </div>
+              )}
+              {order.diagnosis && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Diagnóstico</p>
+                  <p className="text-sm">{order.diagnosis}</p>
+                </div>
+              )}
+              {order.internal_notes && (
+                <div className="rounded-md bg-muted/50 px-3 py-2">
+                  <p className="text-xs text-muted-foreground mb-1">Notas internas</p>
+                  <p className="text-sm">{order.internal_notes}</p>
+                </div>
+              )}
+              {!order.problem_description && !order.diagnosis && !order.internal_notes && !order.estimated_delivery && (
+                <p className="text-xs text-muted-foreground italic">Sin detalles registrados.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Historial de estados */}
           {statusLog.length > 0 && (
-            <div className="pt-3 border-t">
-              <p className="text-xs text-muted-foreground mb-2">Historial de estados</p>
-              <div className="space-y-1">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Historial de estados</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-1.5">
                 {statusLog.map(log => (
-                  <p key={log.id} className="text-xs text-muted-foreground">
+                  <div key={log.id} className="text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">{ORDER_STATUS_LABELS[log.to_status]}</span>
-                    {log.from_status ? ` (desde ${ORDER_STATUS_LABELS[log.from_status]})` : ' (estado inicial)'}
-                    {' · '}{formatDateTime(log.changed_at)}
-                  </p>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Pestañas piezas / mano de obra */}
-      <Card>
-        <CardHeader className="pb-0">
-          <CardTitle className="text-base">Detalle del trabajo</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <Tabs defaultValue="piezas">
-            <TabsList className="mb-4">
-              <TabsTrigger value="piezas">Piezas</TabsTrigger>
-              <TabsTrigger value="labor">Mano de obra</TabsTrigger>
-              <TabsTrigger value="pagos">Pagos</TabsTrigger>
-            </TabsList>
-            <TabsContent value="piezas"><PiezasTab workOrderId={id!} /></TabsContent>
-            <TabsContent value="labor"><ManoObraTab workOrderId={id!} /></TabsContent>
-            <TabsContent value="pagos"><PaymentsTab workOrderId={id!} totalAmount={totalParts + totalLabor} /></TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-
-      {/* Presupuestos de esta orden */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Presupuestos
-            </CardTitle>
-            <Button size="sm" variant="outline" onClick={() => navigate(`/presupuestos/nuevo?orden=${id}`)}>
-              <Plus className="h-4 w-4 mr-1" />Nuevo presupuesto
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {quotes.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Sin presupuestos generados para esta orden.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {quotes.map(q => (
-                <button
-                  key={q.id}
-                  onClick={() => navigate(`/presupuestos/${q.id}`)}
-                  className="w-full text-left flex items-center justify-between rounded-lg border px-4 py-2.5 hover:bg-muted/40 transition-colors"
-                >
-                  <div>
-                    <span className="text-sm font-medium mr-2">{q.quote_number}</span>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${QUOTE_STATUS_COLORS[q.status]}`}>
-                      {QUOTE_STATUS_LABELS[q.status]}
-                    </span>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {formatDate(q.created_at)}
-                      {q.include_iva ? ` · IGIC ${q.iva_rate}%` : ' · Sin IGIC'}
-                    </p>
+                    {log.from_status ? ` ← ${ORDER_STATUS_LABELS[log.from_status]}` : ' (inicio)'}
+                    <span className="block text-xs opacity-70">{formatDateTime(log.changed_at)}</span>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                </button>
-              ))}
-            </div>
+                ))}
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
 
-      {/* Resumen económico sticky */}
-      <EconomicSummary totalParts={totalParts} totalLabor={totalLabor} totalPaid={totalPaid} orderId={id!} />
+        </div>
+      </div>
 
       {/* Dialogs */}
       <EditOrderDialog order={order} open={editOpen} onClose={() => setEditOpen(false)} onSave={handleUpdateOrder} />
@@ -598,7 +630,7 @@ export default function OrdenDetallePage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Cambiar estado</AlertDialogTitle>
             <AlertDialogDescription>
-              ¿Cambiar la orden <strong>{order.order_number}</strong> a{' '}
+              ¿Cambiar <strong>{order.order_number}</strong> a{' '}
               <strong>{confirmStatus ? ORDER_STATUS_LABELS[confirmStatus] : ''}</strong>?
             </AlertDialogDescription>
           </AlertDialogHeader>

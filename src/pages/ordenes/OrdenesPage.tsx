@@ -1,15 +1,18 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, ClipboardList } from 'lucide-react'
+import { Plus, Search, ClipboardList, Pencil, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { useWorkOrders } from '@/hooks/useWorkOrders'
+import { MachineTypeBadge } from '@/components/maquinas/MachineTypeBadge'
+import { toast } from '@/hooks/use-toast'
 import { formatDate } from '@/lib/utils'
-import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, type WorkOrderStatus } from '@/types'
+import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, type WorkOrder, type WorkOrderStatus } from '@/types'
 
 const STATUS_OPTIONS: { value: WorkOrderStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'Todos los estados' },
@@ -26,11 +29,20 @@ export default function OrdenesPage() {
   const navigate = useNavigate()
   const [status, setStatus] = useState<WorkOrderStatus | 'all'>('all')
   const [search, setSearch] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<WorkOrder | null>(null)
 
-  const { orders, loading } = useWorkOrders({
+  const { orders, loading, deleteOrder } = useWorkOrders({
     status: status !== 'all' ? status : undefined,
     search: search || undefined,
   })
+
+  async function handleDelete() {
+    if (!deleteTarget) return
+    const { error } = await deleteOrder(deleteTarget.id)
+    if (error) toast({ title: 'Error al eliminar', description: error, variant: 'destructive' })
+    else toast({ title: 'Orden eliminada' })
+    setDeleteTarget(null)
+  }
 
   return (
     <div>
@@ -92,39 +104,81 @@ export default function OrdenesPage() {
           {orders.map(order => (
             <div
               key={order.id}
-              onClick={() => navigate(`/ordenes/${order.id}`)}
-              className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 cursor-pointer transition-colors gap-3"
+              className="flex items-center rounded-lg border bg-card hover:bg-accent/50 transition-colors gap-0"
             >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-sm">{order.order_number}</span>
-                  {order.client && (
-                    <span className="text-sm text-muted-foreground">· {order.client.name}</span>
-                  )}
+              {/* Área principal clickable */}
+              <div
+                onClick={() => navigate(`/ordenes/${order.id}`)}
+                className="flex items-center justify-between flex-1 p-4 cursor-pointer gap-3 min-w-0"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-sm">{order.order_number}</span>
+                    {order.client && (
+                      <span className="text-sm text-muted-foreground">· {order.client.name}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    {order.machine && <MachineTypeBadge type={order.machine.type} />}
+                    {order.machine && (order.machine.brand || order.machine.model) && (
+                      <span className="text-xs text-muted-foreground">
+                        {[order.machine.brand, order.machine.model].filter(Boolean).join(' ')}
+                      </span>
+                    )}
+                    {order.problem_description && (
+                      <span className="text-xs text-muted-foreground truncate max-w-xs">
+                        {order.machine ? '· ' : ''}{order.problem_description}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                  {order.machine && (
-                    <span className="text-xs text-muted-foreground">
-                      {[order.machine.brand, order.machine.model].filter(Boolean).join(' ')}
-                    </span>
-                  )}
-                  {order.problem_description && (
-                    <span className="text-xs text-muted-foreground truncate max-w-xs">
-                      {order.machine ? '· ' : ''}{order.problem_description}
-                    </span>
-                  )}
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <Badge className={ORDER_STATUS_COLORS[order.status]}>
+                    {ORDER_STATUS_LABELS[order.status]}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">{formatDate(order.created_at)}</span>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-1 shrink-0">
-                <Badge className={ORDER_STATUS_COLORS[order.status]}>
-                  {ORDER_STATUS_LABELS[order.status]}
-                </Badge>
-                <span className="text-xs text-muted-foreground">{formatDate(order.created_at)}</span>
+              {/* Acciones rápidas */}
+              <div className="flex items-center gap-0.5 pr-2 shrink-0">
+                <Button
+                  variant="ghost" size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  onClick={e => { e.stopPropagation(); navigate(`/ordenes/${order.id}`) }}
+                  title="Editar"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost" size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  onClick={e => { e.stopPropagation(); setDeleteTarget(order) }}
+                  title="Eliminar"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={v => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar orden?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará <strong>{deleteTarget?.order_number}</strong> y todos sus datos (piezas, mano de obra, pagos). Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleDelete}>
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
