@@ -10,7 +10,7 @@ import { useMachines } from '@/hooks/useMachines'
 import { toast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
 import { formatDate } from '@/lib/utils'
-import { type Machine, type WorkOrder, MACHINE_TYPE_LABELS, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/types'
+import { type Machine, type WorkOrder, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/types'
 import { MachineTypeBadge } from '@/components/maquinas/MachineTypeBadge'
 
 export default function MaquinasPage() {
