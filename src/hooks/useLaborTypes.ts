@@ -18,7 +18,6 @@ export function useLaborTypes() {
     const { data } = await supabase
       .from('labor_types')
       .select('*')
-      .eq('user_id', user!.id)
       .order('name')
     setLaborTypes((data as LaborType[]) ?? [])
     setLoading(false)
@@ -37,7 +36,6 @@ export function useLaborTypes() {
       .from('labor_types')
       .update(values)
       .eq('id', id)
-      .eq('user_id', user!.id)
     if (!error) await fetchLaborTypes()
     return { error: error?.message ?? null }
   }
@@ -47,7 +45,6 @@ export function useLaborTypes() {
       .from('labor_types')
       .delete()
       .eq('id', id)
-      .eq('user_id', user!.id)
     if (!error) setLaborTypes(prev => prev.filter(lt => lt.id !== id))
     return { error: error?.message ?? null }
   }

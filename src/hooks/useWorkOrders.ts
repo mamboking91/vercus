@@ -24,7 +24,6 @@ export function useWorkOrders(filters: Filters = {}) {
     let query = supabase
       .from('work_orders')
       .select('*, client:clients(id, name, phone), machine:machines(id, brand, model, type)')
-      .eq('user_id', user!.id)
       .order('created_at', { ascending: false })
 
     if (filters.status && filters.status !== 'all') {
@@ -56,7 +55,6 @@ export function useWorkOrders(filters: Filters = {}) {
     const { count } = await supabase
       .from('work_orders')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', user!.id)
       .like('order_number', `ORD-${year}-%`)
 
     const seq = (count ?? 0) + 1
@@ -92,7 +90,6 @@ export function useWorkOrders(filters: Filters = {}) {
       .from('work_orders')
       .update({ status: toStatus })
       .eq('id', id)
-      .eq('user_id', user!.id)
 
     if (!error) {
       await supabase.from('work_order_status_log').insert({
@@ -111,7 +108,6 @@ export function useWorkOrders(filters: Filters = {}) {
       .from('work_orders')
       .update(values)
       .eq('id', id)
-      .eq('user_id', user!.id)
 
     if (!error) {
       setOrders(prev => prev.map(o => o.id === id ? { ...o, ...values } : o))
@@ -125,7 +121,6 @@ export function useWorkOrders(filters: Filters = {}) {
       .from('work_orders')
       .delete()
       .eq('id', id)
-      .eq('user_id', user!.id)
     if (!error) setOrders(prev => prev.filter(o => o.id !== id))
     return { error: error?.message ?? null }
   }
@@ -135,7 +130,6 @@ export function useWorkOrders(filters: Filters = {}) {
       .from('work_orders')
       .select('*, client:clients(id, name, phone, email), machine:machines(id, brand, model, type, serial_number)')
       .eq('id', id)
-      .eq('user_id', user!.id)
       .single()
     return data as WorkOrder | null
   }

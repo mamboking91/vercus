@@ -18,7 +18,6 @@ export function useQuotes(workOrderId?: string) {
     let q = supabase
       .from('quotes')
       .select('*, work_order:work_orders(id, order_number, client:clients(id, name))')
-      .eq('user_id', user!.id)
       .order('created_at', { ascending: false })
     if (workOrderId) q = q.eq('work_order_id', workOrderId)
     const { data } = await q
@@ -48,7 +47,6 @@ export function useQuotes(workOrderId?: string) {
     const { count } = await supabase
       .from('quotes')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', user!.id)
       .like('quote_number', `${prefix}%`)
     const num = String((count ?? 0) + 1).padStart(3, '0')
     const quote_number = `${prefix}${num}`
@@ -67,7 +65,6 @@ export function useQuotes(workOrderId?: string) {
       .from('quotes')
       .update(values)
       .eq('id', id)
-      .eq('user_id', user!.id)
       .select()
       .single()
     if (!error && data) setQuotes(prev => prev.map(q => q.id === id ? data as Quote : q))
@@ -79,7 +76,6 @@ export function useQuotes(workOrderId?: string) {
       .from('quotes')
       .delete()
       .eq('id', id)
-      .eq('user_id', user!.id)
     if (!error) setQuotes(prev => prev.filter(q => q.id !== id))
     return { error: error?.message ?? null }
   }

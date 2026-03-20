@@ -43,7 +43,6 @@ export function useMachineTypes() {
     const { data, error: fetchError } = await supabase
       .from('machine_types')
       .select('*')
-      .eq('user_id', user!.id)
       .order('name')
 
     // Si la tabla no existe aún, mantener el fallback estático
@@ -62,7 +61,6 @@ export function useMachineTypes() {
         const { data: seeded } = await supabase
           .from('machine_types')
           .select('*')
-          .eq('user_id', user!.id)
           .order('name')
         setMachineTypes((seeded as MachineTypeRecord[]) ?? BUILTIN_FALLBACK)
       }
@@ -86,7 +84,6 @@ export function useMachineTypes() {
       .from('machine_types')
       .update(values)
       .eq('id', id)
-      .eq('user_id', user!.id)
     if (!error) await fetchMachineTypes()
     return { error: error?.message ?? null }
   }
@@ -96,7 +93,6 @@ export function useMachineTypes() {
       .from('machine_types')
       .delete()
       .eq('id', id)
-      .eq('user_id', user!.id)
     if (!error) setMachineTypes(prev => prev.filter(t => t.id !== id))
     return { error: error?.message ?? null }
   }

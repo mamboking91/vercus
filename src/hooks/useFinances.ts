@@ -63,7 +63,6 @@ export function useFinances() {
       supabase
         .from('expenses')
         .select('*')
-        .eq('user_id', user!.id)
         .gte('date', from)
         .lte('date', to)
         .order('date', { ascending: false }),
@@ -71,7 +70,6 @@ export function useFinances() {
       supabase
         .from('work_orders')
         .select('id, order_number, status, client:clients(id, name, phone)')
-        .eq('user_id', user!.id)
         .neq('status', 'entregada'),
       // Recent payments with order + client info
       supabase

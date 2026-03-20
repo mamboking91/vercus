@@ -40,9 +40,9 @@ create table settings (
 );
 
 alter table settings enable row level security;
-create policy "Usuario accede a sus settings" on settings
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+create policy "Usuarios autenticados acceden a settings" on settings
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
 
 -- ─── CLIENTS ───────────────────────────────────────────────
 
@@ -58,9 +58,9 @@ create table clients (
 );
 
 alter table clients enable row level security;
-create policy "Usuario accede a sus clientes" on clients
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+create policy "Usuarios autenticados acceden a clientes" on clients
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
 
 create index clients_user_id_idx on clients(user_id);
 
@@ -79,9 +79,9 @@ create table machines (
 );
 
 alter table machines enable row level security;
-create policy "Usuario accede a sus maquinas" on machines
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+create policy "Usuarios autenticados acceden a maquinas" on machines
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
 
 create index machines_client_id_idx on machines(client_id);
 
@@ -95,9 +95,9 @@ create table labor_types (
 );
 
 alter table labor_types enable row level security;
-create policy "Usuario accede a sus tipos de labor" on labor_types
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+create policy "Usuarios autenticados acceden a labor_types" on labor_types
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
 
 -- Datos de ejemplo (se insertan tras el login desde la app)
 
@@ -115,9 +115,9 @@ create table parts_catalog (
 );
 
 alter table parts_catalog enable row level security;
-create policy "Usuario accede a su catalogo" on parts_catalog
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+create policy "Usuarios autenticados acceden a parts_catalog" on parts_catalog
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
 
 create index parts_catalog_user_id_idx on parts_catalog(user_id);
 
@@ -139,9 +139,9 @@ create table work_orders (
 );
 
 alter table work_orders enable row level security;
-create policy "Usuario accede a sus ordenes" on work_orders
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+create policy "Usuarios autenticados acceden a work_orders" on work_orders
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
 
 create index work_orders_user_id_idx on work_orders(user_id);
 create index work_orders_client_id_idx on work_orders(client_id);
@@ -171,13 +171,9 @@ create table work_order_status_log (
 );
 
 alter table work_order_status_log enable row level security;
-create policy "Usuario accede al log de sus ordenes" on work_order_status_log
-  using (
-    exists (
-      select 1 from work_orders wo
-      where wo.id = work_order_id and wo.user_id = auth.uid()
-    )
-  );
+create policy "Usuarios autenticados acceden a work_order_status_log" on work_order_status_log
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
 
 -- ─── WORK ORDER PARTS ──────────────────────────────────────
 
@@ -193,19 +189,9 @@ create table work_order_parts (
 );
 
 alter table work_order_parts enable row level security;
-create policy "Usuario accede a las piezas de sus ordenes" on work_order_parts
-  using (
-    exists (
-      select 1 from work_orders wo
-      where wo.id = work_order_id and wo.user_id = auth.uid()
-    )
-  )
-  with check (
-    exists (
-      select 1 from work_orders wo
-      where wo.id = work_order_id and wo.user_id = auth.uid()
-    )
-  );
+create policy "Usuarios autenticados acceden a work_order_parts" on work_order_parts
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
 
 -- ─── WORK ORDER LABOR ──────────────────────────────────────
 
@@ -219,19 +205,9 @@ create table work_order_labor (
 );
 
 alter table work_order_labor enable row level security;
-create policy "Usuario accede a la labor de sus ordenes" on work_order_labor
-  using (
-    exists (
-      select 1 from work_orders wo
-      where wo.id = work_order_id and wo.user_id = auth.uid()
-    )
-  )
-  with check (
-    exists (
-      select 1 from work_orders wo
-      where wo.id = work_order_id and wo.user_id = auth.uid()
-    )
-  );
+create policy "Usuarios autenticados acceden a work_order_labor" on work_order_labor
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
 
 -- ─── QUOTES ────────────────────────────────────────────────
 
@@ -249,9 +225,9 @@ create table quotes (
 );
 
 alter table quotes enable row level security;
-create policy "Usuario accede a sus presupuestos" on quotes
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+create policy "Usuarios autenticados acceden a quotes" on quotes
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
 
 -- ─── PAYMENTS ──────────────────────────────────────────────
 
@@ -265,19 +241,9 @@ create table payments (
 );
 
 alter table payments enable row level security;
-create policy "Usuario accede a los pagos de sus ordenes" on payments
-  using (
-    exists (
-      select 1 from work_orders wo
-      where wo.id = work_order_id and wo.user_id = auth.uid()
-    )
-  )
-  with check (
-    exists (
-      select 1 from work_orders wo
-      where wo.id = work_order_id and wo.user_id = auth.uid()
-    )
-  );
+create policy "Usuarios autenticados acceden a payments" on payments
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
 
 -- ─── EXPENSES ──────────────────────────────────────────────
 
@@ -291,9 +257,9 @@ create table expenses (
 );
 
 alter table expenses enable row level security;
-create policy "Usuario accede a sus gastos" on expenses
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+create policy "Usuarios autenticados acceden a expenses" on expenses
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
 
 -- ─── STORAGE ───────────────────────────────────────────────
 -- Ejecutar esto desde el panel de Storage de Supabase o con:

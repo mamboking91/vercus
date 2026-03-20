@@ -19,7 +19,6 @@ export function useClients() {
     const { data, error } = await supabase
       .from('clients')
       .select('*')
-      .eq('user_id', user!.id)
       .order('name')
     if (error) setError(error.message)
     else setClients((data as Client[]) ?? [])
@@ -41,7 +40,6 @@ export function useClients() {
       .from('clients')
       .update(values)
       .eq('id', id)
-      .eq('user_id', user!.id)
       .select()
       .single()
     if (!error && data) setClients(prev => prev.map(c => c.id === id ? data as Client : c).sort((a, b) => a.name.localeCompare(b.name)))
@@ -53,7 +51,6 @@ export function useClients() {
       .from('clients')
       .delete()
       .eq('id', id)
-      .eq('user_id', user!.id)
     if (!error) setClients(prev => prev.filter(c => c.id !== id))
     return { error: error?.message ?? null }
   }
@@ -63,7 +60,6 @@ export function useClients() {
       .from('clients')
       .select('*')
       .eq('id', id)
-      .eq('user_id', user!.id)
       .single()
     return data as Client | null
   }

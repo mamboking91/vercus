@@ -18,7 +18,6 @@ export function useMachines(clientId?: string) {
     let query = supabase
       .from('machines')
       .select('*, client:clients(id, name, phone)')
-      .eq('user_id', user!.id)
       .order('brand')
     if (clientId) query = query.eq('client_id', clientId)
     const { data } = await query
@@ -31,7 +30,6 @@ export function useMachines(clientId?: string) {
       .from('machines')
       .select('*, client:clients(id, name, phone, email, address)')
       .eq('id', id)
-      .eq('user_id', user!.id)
       .single()
     return data as Machine | null
   }
@@ -51,7 +49,6 @@ export function useMachines(clientId?: string) {
       .from('machines')
       .update(values)
       .eq('id', id)
-      .eq('user_id', user!.id)
       .select('*, client:clients(id, name, phone)')
       .single()
     if (!error && data) setMachines(prev => prev.map(m => m.id === id ? data as Machine : m))
@@ -63,7 +60,6 @@ export function useMachines(clientId?: string) {
       .from('machines')
       .delete()
       .eq('id', id)
-      .eq('user_id', user!.id)
     if (!error) setMachines(prev => prev.filter(m => m.id !== id))
     return { error: error?.message ?? null }
   }

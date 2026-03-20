@@ -19,7 +19,7 @@ export function useSettings() {
     const { data, error } = await supabase
       .from('settings')
       .select('*')
-      .eq('user_id', user!.id)
+      .limit(1)
       .maybeSingle()
 
     if (error) setError(error.message)
@@ -30,12 +30,13 @@ export function useSettings() {
   async function saveSettings(values: Partial<Omit<Settings, 'id' | 'user_id'>>) {
     if (!user) return { error: 'No autenticado' }
 
-    const payload = { ...values, user_id: user.id }
-    const { data, error } = await supabase
-      .from('settings')
-      .upsert(payload, { onConflict: 'user_id' })
-      .select()
-      .single()
+    let query
+    if (settings?.id) {
+      query = supabase.from('settings').update(values).eq('id', settings.id).select().single()
+    } else {
+      query = supabase.from('settings').insert({ ...values, user_id: user.id }).select().single()
+    }
+    const { data, error } = await query
 
     if (!error && data) setSettings(data as Settings)
     return { error: error?.message ?? null }

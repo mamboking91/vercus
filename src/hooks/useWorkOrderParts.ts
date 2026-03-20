@@ -35,7 +35,6 @@ export function useWorkOrderParts(workOrderId: string) {
     let existsQuery = supabase
       .from('parts_catalog')
       .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
 
     if (matchField) {
       existsQuery = existsQuery.eq('code', code!)

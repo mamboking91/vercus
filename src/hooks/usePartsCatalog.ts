@@ -18,7 +18,6 @@ export function usePartsCatalog() {
     const { data } = await supabase
       .from('parts_catalog')
       .select('*')
-      .eq('user_id', user!.id)
       .order('description')
     setParts((data as PartsCatalogItem[]) ?? [])
     setLoading(false)
@@ -39,7 +38,6 @@ export function usePartsCatalog() {
       .from('parts_catalog')
       .update(values)
       .eq('id', id)
-      .eq('user_id', user!.id)
       .select()
       .single()
     if (!error && data) setParts(prev => prev.map(p => p.id === id ? data as PartsCatalogItem : p))
@@ -51,7 +49,6 @@ export function usePartsCatalog() {
       .from('parts_catalog')
       .delete()
       .eq('id', id)
-      .eq('user_id', user!.id)
     if (!error) setParts(prev => prev.filter(p => p.id !== id))
     return { error: error?.message ?? null }
   }
