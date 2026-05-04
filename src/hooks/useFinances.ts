@@ -118,7 +118,7 @@ export function useFinances() {
     const activeIds = activeOrders.map((o: any) => o.id)
 
     if (activeIds.length > 0) {
-      const [partsRes, laborRes, paidRes] = await Promise.all([
+      const [partsRes, laborRes, extrasRes, paidRes] = await Promise.all([
         supabase
           .from('work_order_parts')
           .select('work_order_id, quantity, unit_price')
@@ -126,6 +126,10 @@ export function useFinances() {
         supabase
           .from('work_order_labor')
           .select('work_order_id, hours, unit_rate')
+          .in('work_order_id', activeIds),
+        supabase
+          .from('work_order_extras')
+          .select('work_order_id, amount')
           .in('work_order_id', activeIds),
         supabase
           .from('payments')
@@ -139,6 +143,9 @@ export function useFinances() {
       }
       for (const l of (laborRes.data ?? [])) {
         billed[l.work_order_id] = (billed[l.work_order_id] ?? 0) + l.hours * l.unit_rate
+      }
+      for (const e of (extrasRes.data ?? [])) {
+        billed[e.work_order_id] = (billed[e.work_order_id] ?? 0) + e.amount
       }
       const paid: Record<string, number> = {}
       for (const p of (paidRes.data ?? [])) {

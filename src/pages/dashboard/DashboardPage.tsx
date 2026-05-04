@@ -82,14 +82,16 @@ export default function DashboardPage() {
     let pendingAmount = 0
     if (activeIds.length > 0) {
       try {
-        const [partsRes, laborRes, allPaymentsRes] = await Promise.all([
+        const [partsRes, laborRes, extrasRes, allPaymentsRes] = await Promise.all([
           supabase.from('work_order_parts').select('quantity, unit_price, work_order_id').in('work_order_id', activeIds),
           supabase.from('work_order_labor').select('hours, unit_rate, work_order_id').in('work_order_id', activeIds),
+          supabase.from('work_order_extras').select('amount, work_order_id').in('work_order_id', activeIds),
           supabase.from('payments').select('amount, work_order_id').in('work_order_id', activeIds),
         ])
         const totalBilled = [
           ...(partsRes.data ?? []).map((p: { quantity: number; unit_price: number }) => p.quantity * p.unit_price),
           ...(laborRes.data ?? []).map((l: { hours: number; unit_rate: number }) => l.hours * l.unit_rate),
+          ...(extrasRes.data ?? []).map((e: { amount: number }) => e.amount),
         ].reduce((s, v) => s + v, 0)
         const totalPaid = (allPaymentsRes.data ?? []).reduce((s: number, p: { amount: number }) => s + p.amount, 0)
         pendingAmount = Math.max(0, totalBilled - totalPaid)
