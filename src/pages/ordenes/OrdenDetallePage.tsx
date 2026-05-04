@@ -49,8 +49,16 @@ function getPrevStatus(current: WorkOrder['status']) {
 
 // ─── Tab: Piezas ──────────────────────────────────────────────────────────────
 
-function PiezasTab({ workOrderId }: { workOrderId: string }) {
-  const { parts, loading, addPart, updatePart, deletePart } = useWorkOrderParts(workOrderId)
+interface PiezasTabProps {
+  workOrderId: string
+  parts: WorkOrderPart[]
+  loading: boolean
+  addPart: (v: Omit<WorkOrderPart, 'id'>) => Promise<{ error: string | null }>
+  updatePart: (id: string, v: Partial<Omit<WorkOrderPart, 'id' | 'work_order_id'>>) => Promise<{ error: string | null }>
+  deletePart: (id: string) => Promise<{ error: string | null }>
+}
+
+function PiezasTab({ workOrderId, parts, loading, addPart, updatePart, deletePart }: PiezasTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<WorkOrderPart | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<WorkOrderPart | null>(null)
@@ -136,8 +144,16 @@ function PiezasTab({ workOrderId }: { workOrderId: string }) {
 
 // ─── Tab: Mano de obra ────────────────────────────────────────────────────────
 
-function ManoObraTab({ workOrderId }: { workOrderId: string }) {
-  const { laborEntries, loading, addLabor, updateLabor, deleteLabor } = useWorkOrderLabor(workOrderId)
+interface ManoObraTabProps {
+  workOrderId: string
+  laborEntries: WorkOrderLabor[]
+  loading: boolean
+  addLabor: (v: Omit<WorkOrderLabor, 'id' | 'labor_type'>) => Promise<{ error: string | null }>
+  updateLabor: (id: string, v: Partial<Omit<WorkOrderLabor, 'id' | 'work_order_id' | 'labor_type'>>) => Promise<{ error: string | null }>
+  deleteLabor: (id: string) => Promise<{ error: string | null }>
+}
+
+function ManoObraTab({ workOrderId, laborEntries, loading, addLabor, updateLabor, deleteLabor }: ManoObraTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<WorkOrderLabor | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<WorkOrderLabor | null>(null)
@@ -425,8 +441,8 @@ export default function OrdenDetallePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { getOrder, updateOrder, updateOrderStatus } = useWorkOrders()
-  const { totalParts } = useWorkOrderParts(id!)
-  const { totalLabor } = useWorkOrderLabor(id!)
+  const { parts, loading: partsLoading, addPart, updatePart, deletePart, totalParts } = useWorkOrderParts(id!)
+  const { laborEntries, loading: laborLoading, addLabor, updateLabor, deleteLabor, totalLabor } = useWorkOrderLabor(id!)
   const { extras, loading: extrasLoading, addExtra, updateExtra, deleteExtra, totalExtras } = useWorkOrderExtras(id!)
   const { totalPaid } = usePayments(id!)
   const { quotes } = useQuotes(id!)
@@ -535,8 +551,12 @@ export default function OrdenDetallePage() {
                   <TabsTrigger value="extras" className="flex-1">Extras</TabsTrigger>
                   <TabsTrigger value="pagos" className="flex-1">Pagos</TabsTrigger>
                 </TabsList>
-                <TabsContent value="piezas"><PiezasTab workOrderId={id!} /></TabsContent>
-                <TabsContent value="labor"><ManoObraTab workOrderId={id!} /></TabsContent>
+                <TabsContent value="piezas">
+                  <PiezasTab workOrderId={id!} parts={parts} loading={partsLoading} addPart={addPart} updatePart={updatePart} deletePart={deletePart} />
+                </TabsContent>
+                <TabsContent value="labor">
+                  <ManoObraTab workOrderId={id!} laborEntries={laborEntries} loading={laborLoading} addLabor={addLabor} updateLabor={updateLabor} deleteLabor={deleteLabor} />
+                </TabsContent>
                 <TabsContent value="extras">
                   <ExtrasTab
                     workOrderId={id!}

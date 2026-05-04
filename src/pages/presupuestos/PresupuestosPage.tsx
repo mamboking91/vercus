@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
-import { ArrowLeft, Download, Share2, Pencil, User, ClipboardList } from 'lucide-react'
+import { ArrowLeft, Download, Share2, Pencil, User, ClipboardList, Mail } from 'lucide-react'
 import { PDFDownloadLink, pdf } from '@react-pdf/renderer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -21,7 +21,7 @@ import { useSettings } from '@/hooks/useSettings'
 import { supabase } from '@/lib/supabase'
 import { toast } from '@/hooks/use-toast'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { type Quote, type IvaRate, type QuoteStatus, type WorkOrder, type WorkOrderExtra } from '@/types'
+import { type Quote, type IvaRate, type QuoteStatus, type WorkOrder } from '@/types'
 
 // ─── Tipos de estado ──────────────────────────────────────────────────────────
 
@@ -432,22 +432,63 @@ export default function PresupuestosPage() {
     await loadQuote(quote.id)
   }
 
+  async function buildPdfBlob() {
+    const blob = await pdf(
+      <QuotePDF quote={quote!} parts={parts} labor={labor} extras={extras} settings={settings} />
+    ).toBlob()
+    return blob
+  }
+
+  function downloadBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   async function handleWhatsApp() {
     if (!quote) return
+    const filename = `${quote.quote_number}.pdf`
     try {
-      const blob = await pdf(
-        <QuotePDF quote={quote} parts={parts} labor={labor} extras={extras} settings={settings} />
-      ).toBlob()
-      const file = new File([blob], `${quote.quote_number}.pdf`, { type: 'application/pdf' })
+      const blob = await buildPdfBlob()
+      const file = new File([blob], filename, { type: 'application/pdf' })
       if (navigator.canShare?.({ files: [file] })) {
+        // Móvil: comparte el PDF directamente (el usuario elige WhatsApp)
         await navigator.share({ files: [file], title: quote.quote_number })
       } else {
+        // Escritorio: descarga el PDF y abre WhatsApp Web con mensaje pre-rellenado
+        downloadBlob(blob, filename)
         const phone = quote.work_order?.client?.phone?.replace(/\D/g, '') ?? ''
         const msg = encodeURIComponent(`Te adjunto el presupuesto ${quote.quote_number}.`)
-        window.open(phone ? `https://wa.me/${phone}?text=${msg}` : `https://wa.me/?text=${msg}`, '_blank')
+        window.open(phone ? `https://wa.me/${phone}?text=${msg}` : 'https://wa.me/', '_blank')
+        toast({ title: 'PDF descargado', description: 'Adjúntalo en el chat de WhatsApp.' })
       }
     } catch {
       toast({ title: 'No se pudo compartir el PDF', variant: 'destructive' })
+    }
+  }
+
+  async function handleGmail() {
+    if (!quote) return
+    const filename = `${quote.quote_number}.pdf`
+    try {
+      const blob = await buildPdfBlob()
+      downloadBlob(blob, filename)
+      const clientName = quote.work_order?.client?.name ?? ''
+      const clientEmail = quote.work_order?.client?.email ?? ''
+      const subject = encodeURIComponent(`Presupuesto ${quote.quote_number}`)
+      const body = encodeURIComponent(
+        `Hola${clientName ? ` ${clientName}` : ''},\n\nAdjunto encontrarás el presupuesto ${quote.quote_number}.\n\nQuedamos a tu disposición para cualquier consulta.\n\nUn saludo`
+      )
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1${clientEmail ? `&to=${encodeURIComponent(clientEmail)}` : ''}&su=${subject}&body=${body}`
+      window.open(gmailUrl, '_blank')
+      toast({ title: 'PDF descargado', description: 'Adjúntalo al correo en Gmail.' })
+    } catch {
+      toast({ title: 'No se pudo generar el PDF', variant: 'destructive' })
     }
   }
 
@@ -514,6 +555,10 @@ export default function PresupuestosPage() {
           <Button variant="outline" size="sm" onClick={handleWhatsApp}>
             <Share2 className="h-3.5 w-3.5 mr-1.5" />
             <span className="hidden sm:inline">WhatsApp</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleGmail}>
+            <Mail className="h-3.5 w-3.5 mr-1.5" />
+            <span className="hidden sm:inline">Gmail</span>
           </Button>
           <PDFDownloadLink
             document={<QuotePDF quote={quote} parts={parts} labor={labor} extras={extras} settings={settings} />}
