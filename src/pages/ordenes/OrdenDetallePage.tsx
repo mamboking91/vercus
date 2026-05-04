@@ -223,8 +223,16 @@ function ManoObraTab({ workOrderId }: { workOrderId: string }) {
 
 // ─── Tab: Extras ─────────────────────────────────────────────────────────────
 
-function ExtrasTab({ workOrderId }: { workOrderId: string }) {
-  const { extras, loading, addExtra, updateExtra, deleteExtra } = useWorkOrderExtras(workOrderId)
+interface ExtrasTabProps {
+  workOrderId: string
+  extras: WorkOrderExtra[]
+  loading: boolean
+  addExtra: (v: Omit<WorkOrderExtra, 'id'>) => Promise<{ error: string | null }>
+  updateExtra: (id: string, v: Partial<Omit<WorkOrderExtra, 'id' | 'work_order_id'>>) => Promise<{ error: string | null }>
+  deleteExtra: (id: string) => Promise<{ error: string | null }>
+}
+
+function ExtrasTab({ workOrderId, extras, loading, addExtra, updateExtra, deleteExtra }: ExtrasTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<WorkOrderExtra | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<WorkOrderExtra | null>(null)
@@ -419,7 +427,7 @@ export default function OrdenDetallePage() {
   const { getOrder, updateOrder, updateOrderStatus } = useWorkOrders()
   const { totalParts } = useWorkOrderParts(id!)
   const { totalLabor } = useWorkOrderLabor(id!)
-  const { totalExtras } = useWorkOrderExtras(id!)
+  const { extras, loading: extrasLoading, addExtra, updateExtra, deleteExtra, totalExtras } = useWorkOrderExtras(id!)
   const { totalPaid } = usePayments(id!)
   const { quotes } = useQuotes(id!)
 
@@ -529,7 +537,16 @@ export default function OrdenDetallePage() {
                 </TabsList>
                 <TabsContent value="piezas"><PiezasTab workOrderId={id!} /></TabsContent>
                 <TabsContent value="labor"><ManoObraTab workOrderId={id!} /></TabsContent>
-                <TabsContent value="extras"><ExtrasTab workOrderId={id!} /></TabsContent>
+                <TabsContent value="extras">
+                  <ExtrasTab
+                    workOrderId={id!}
+                    extras={extras}
+                    loading={extrasLoading}
+                    addExtra={addExtra}
+                    updateExtra={updateExtra}
+                    deleteExtra={deleteExtra}
+                  />
+                </TabsContent>
                 <TabsContent value="pagos"><PaymentsTab workOrderId={id!} totalAmount={total} /></TabsContent>
               </Tabs>
             </CardContent>

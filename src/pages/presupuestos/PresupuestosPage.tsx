@@ -16,11 +16,12 @@ import { MachineTypeBadge } from '@/components/maquinas/MachineTypeBadge'
 import { useQuotes } from '@/hooks/useQuotes'
 import { useWorkOrderParts } from '@/hooks/useWorkOrderParts'
 import { useWorkOrderLabor } from '@/hooks/useWorkOrderLabor'
+import { useWorkOrderExtras } from '@/hooks/useWorkOrderExtras'
 import { useSettings } from '@/hooks/useSettings'
 import { supabase } from '@/lib/supabase'
 import { toast } from '@/hooks/use-toast'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { type Quote, type IvaRate, type QuoteStatus, type WorkOrder } from '@/types'
+import { type Quote, type IvaRate, type QuoteStatus, type WorkOrder, type WorkOrderExtra } from '@/types'
 
 // ─── Tipos de estado ──────────────────────────────────────────────────────────
 
@@ -143,6 +144,7 @@ function NewQuoteForm({ workOrderId, onCreated }: NewQuoteFormProps) {
   const { settings } = useSettings()
   const { parts, loading: loadingParts } = useWorkOrderParts(workOrderId)
   const { laborEntries: labor, loading: loadingLabor } = useWorkOrderLabor(workOrderId)
+  const { extras, loading: loadingExtras } = useWorkOrderExtras(workOrderId)
 
   const [includeIgic, setIncludeIgic] = useState(false)
   const [igicRate, setIgicRate] = useState<IvaRate>(7)
@@ -167,7 +169,8 @@ function NewQuoteForm({ workOrderId, onCreated }: NewQuoteFormProps) {
 
   const subtotalParts = parts.reduce((s, p) => s + p.quantity * p.unit_price, 0)
   const subtotalLabor = labor.reduce((s, l) => s + l.hours * l.unit_rate, 0)
-  const subtotal = subtotalParts + subtotalLabor
+  const subtotalExtras = extras.reduce((s, e) => s + e.amount, 0)
+  const subtotal = subtotalParts + subtotalLabor + subtotalExtras
   const igicAmount = includeIgic ? subtotal * (igicRate / 100) : 0
   const total = subtotal + igicAmount
 
@@ -186,7 +189,7 @@ function NewQuoteForm({ workOrderId, onCreated }: NewQuoteFormProps) {
     if (data) onCreated(data.id)
   }
 
-  const loadingContent = loadingParts || loadingLabor
+  const loadingContent = loadingParts || loadingLabor || loadingExtras
 
   return (
     <form onSubmit={handleSubmit}>
@@ -203,9 +206,9 @@ function NewQuoteForm({ workOrderId, onCreated }: NewQuoteFormProps) {
                 <div className="space-y-2">
                   {[...Array(3)].map((_, i) => <div key={i} className="h-10 rounded bg-muted animate-pulse" />)}
                 </div>
-              ) : parts.length === 0 && labor.length === 0 ? (
+              ) : parts.length === 0 && labor.length === 0 && extras.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-6">
-                  Esta orden no tiene piezas ni mano de obra. El presupuesto se generará vacío.
+                  Esta orden no tiene piezas, mano de obra ni extras. El presupuesto se generará vacío.
                 </p>
               ) : (
                 <div className="space-y-5">
@@ -260,6 +263,27 @@ function NewQuoteForm({ workOrderId, onCreated }: NewQuoteFormProps) {
                       <div className="flex justify-between text-xs text-muted-foreground pt-2 border-t">
                         <span>Subtotal mano de obra</span>
                         <span className="font-medium">{formatCurrency(subtotalLabor)}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Extras */}
+                  {extras.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                        Gastos adicionales
+                      </p>
+                      <div className="divide-y">
+                        {extras.map(e => (
+                          <div key={e.id} className="flex items-center justify-between py-2.5 gap-3">
+                            <p className="text-sm font-medium min-w-0 flex-1 truncate">{e.description}</p>
+                            <p className="text-sm font-semibold shrink-0">{formatCurrency(e.amount)}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground pt-2 border-t">
+                        <span>Subtotal extras</span>
+                        <span className="font-medium">{formatCurrency(subtotalExtras)}</span>
                       </div>
                     </div>
                   )}
@@ -382,6 +406,7 @@ export default function PresupuestosPage() {
 
   const { parts } = useWorkOrderParts(quote?.work_order_id ?? '')
   const { laborEntries: labor } = useWorkOrderLabor(quote?.work_order_id ?? '')
+  const { extras } = useWorkOrderExtras(quote?.work_order_id ?? '')
 
   useEffect(() => {
     if (!isNew && id) loadQuote(id)
@@ -411,7 +436,7 @@ export default function PresupuestosPage() {
     if (!quote) return
     try {
       const blob = await pdf(
-        <QuotePDF quote={quote} parts={parts} labor={labor} settings={settings} />
+        <QuotePDF quote={quote} parts={parts} labor={labor} extras={extras} settings={settings} />
       ).toBlob()
       const file = new File([blob], `${quote.quote_number}.pdf`, { type: 'application/pdf' })
       if (navigator.canShare?.({ files: [file] })) {
@@ -460,7 +485,8 @@ export default function PresupuestosPage() {
 
   const subtotalParts = parts.reduce((s, p) => s + p.quantity * p.unit_price, 0)
   const subtotalLabor = labor.reduce((s, l) => s + l.hours * l.unit_rate, 0)
-  const subtotal = subtotalParts + subtotalLabor
+  const subtotalExtras = extras.reduce((s, e) => s + e.amount, 0)
+  const subtotal = subtotalParts + subtotalLabor + subtotalExtras
   const igicAmount = quote.include_iva ? subtotal * (quote.iva_rate / 100) : 0
   const total = subtotal + igicAmount
 
@@ -490,7 +516,7 @@ export default function PresupuestosPage() {
             <span className="hidden sm:inline">WhatsApp</span>
           </Button>
           <PDFDownloadLink
-            document={<QuotePDF quote={quote} parts={parts} labor={labor} settings={settings} />}
+            document={<QuotePDF quote={quote} parts={parts} labor={labor} extras={extras} settings={settings} />}
             fileName={`${quote.quote_number}.pdf`}
           >
             {({ loading: pdfLoading }) => (
@@ -568,7 +594,30 @@ export default function PresupuestosPage() {
             </Card>
           )}
 
-          {parts.length === 0 && labor.length === 0 && (
+          {/* Extras */}
+          {extras.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Gastos adicionales</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="divide-y">
+                  {extras.map(e => (
+                    <div key={e.id} className="flex items-center justify-between py-3 gap-3">
+                      <p className="text-sm font-medium min-w-0 flex-1 truncate">{e.description}</p>
+                      <p className="text-sm font-semibold shrink-0">{formatCurrency(e.amount)}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-between text-sm border-t pt-3 mt-1 text-muted-foreground">
+                  <span>Subtotal extras</span>
+                  <span className="font-medium text-foreground">{formatCurrency(subtotalExtras)}</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {parts.length === 0 && labor.length === 0 && extras.length === 0 && (
             <Card>
               <CardContent className="py-10 text-center">
                 <p className="text-sm text-muted-foreground">Este presupuesto no tiene líneas de detalle.</p>
@@ -590,6 +639,12 @@ export default function PresupuestosPage() {
                 <span className="text-muted-foreground">Mano de obra</span>
                 <span>{formatCurrency(subtotalLabor)}</span>
               </div>
+              {subtotalExtras > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Gastos adicionales</span>
+                  <span>{formatCurrency(subtotalExtras)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm border-t pt-2">
                 <span className="text-muted-foreground">Base imponible</span>
                 <span>{formatCurrency(subtotal)}</span>

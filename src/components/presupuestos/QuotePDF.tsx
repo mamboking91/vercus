@@ -6,7 +6,7 @@ import {
   StyleSheet,
   Image,
 } from '@react-pdf/renderer'
-import { type Quote, type WorkOrderPart, type WorkOrderLabor, type Settings } from '@/types'
+import { type Quote, type WorkOrderPart, type WorkOrderLabor, type WorkOrderExtra, type Settings } from '@/types'
 import { formatCurrency } from '@/lib/utils'
 
 const styles = StyleSheet.create({
@@ -197,17 +197,19 @@ interface QuotePDFProps {
   quote: Quote
   parts: WorkOrderPart[]
   labor: WorkOrderLabor[]
+  extras: WorkOrderExtra[]
   settings: Settings | null
 }
 
-export function QuotePDF({ quote, parts, labor, settings }: QuotePDFProps) {
+export function QuotePDF({ quote, parts, labor, extras, settings }: QuotePDFProps) {
   const order = quote.work_order
   const client = order?.client
   const machine = order?.machine
 
   const subtotalParts = parts.reduce((s, p) => s + p.quantity * p.unit_price, 0)
   const subtotalLabor = labor.reduce((s, l) => s + l.hours * l.unit_rate, 0)
-  const subtotal = subtotalParts + subtotalLabor
+  const subtotalExtras = extras.reduce((s, e) => s + e.amount, 0)
+  const subtotal = subtotalParts + subtotalLabor + subtotalExtras
   const ivaAmount = quote.include_iva ? subtotal * (quote.iva_rate / 100) : 0
   const total = subtotal + ivaAmount
 
@@ -341,16 +343,43 @@ export function QuotePDF({ quote, parts, labor, settings }: QuotePDFProps) {
           </View>
         )}
 
+        {/* Extras table */}
+        {extras.length > 0 && (
+          <View style={{ marginTop: (parts.length > 0 || labor.length > 0) ? 12 : 0 }}>
+            <Text style={styles.sectionLabel}>Gastos adicionales</Text>
+            <View style={styles.tableHeader}>
+              <Text style={[styles.headerText, { flex: 1 }]}>Concepto</Text>
+              <Text style={[styles.headerText, styles.colTotal]}>Importe</Text>
+            </View>
+            {extras.map((e, i) => (
+              <View key={e.id} style={[styles.tableRow, i % 2 === 1 ? styles.tableRowAlt : {}]}>
+                <Text style={[styles.cellText, { flex: 1 }]}>{e.description}</Text>
+                <Text style={[styles.cellText, styles.colTotal]}>{formatCurrency(e.amount)}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Totals */}
         <View style={styles.totalsBox}>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Subtotal piezas</Text>
-            <Text style={styles.totalValue}>{formatCurrency(subtotalParts)}</Text>
-          </View>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Subtotal mano de obra</Text>
-            <Text style={styles.totalValue}>{formatCurrency(subtotalLabor)}</Text>
-          </View>
+          {subtotalParts > 0 && (
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Subtotal piezas</Text>
+              <Text style={styles.totalValue}>{formatCurrency(subtotalParts)}</Text>
+            </View>
+          )}
+          {subtotalLabor > 0 && (
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Subtotal mano de obra</Text>
+              <Text style={styles.totalValue}>{formatCurrency(subtotalLabor)}</Text>
+            </View>
+          )}
+          {subtotalExtras > 0 && (
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Subtotal extras</Text>
+              <Text style={styles.totalValue}>{formatCurrency(subtotalExtras)}</Text>
+            </View>
+          )}
           <View style={[styles.divider, { alignSelf: 'flex-end' }]} />
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Base imponible</Text>
