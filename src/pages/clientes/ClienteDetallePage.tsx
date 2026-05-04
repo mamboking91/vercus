@@ -155,10 +155,10 @@ export default function ClienteDetallePage() {
           action={
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-                <Pencil className="h-4 w-4 mr-1" />Editar
+                <Pencil className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Editar</span>
               </Button>
               <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteOpen(true)}>
-                <Trash2 className="h-4 w-4 mr-1" />Eliminar
+                <Trash2 className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Eliminar</span>
               </Button>
             </div>
           }

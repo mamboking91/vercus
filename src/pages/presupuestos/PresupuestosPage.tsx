@@ -482,7 +482,7 @@ export default function PresupuestosPage() {
       const clientEmail = quote.work_order?.client?.email ?? ''
       const subject = encodeURIComponent(`Presupuesto ${quote.quote_number}`)
       const body = encodeURIComponent(
-        `Hola${clientName ? ` ${clientName}` : ''},\n\nAdjunto encontrarás el presupuesto ${quote.quote_number}.\n\nQuedamos a tu disposición para cualquier consulta.\n\nUn saludo`
+        `Hola${clientName ? ` ${clientName}` : ''},\n\nAdjunto encontrarás el presupuesto ${quote.quote_number}.\n\nQuedo a tu disposición para cualquier consulta.\n\nUn saludo`
       )
       const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1${clientEmail ? `&to=${encodeURIComponent(clientEmail)}` : ''}&su=${subject}&body=${body}`
       window.open(gmailUrl, '_blank')
@@ -549,15 +549,15 @@ export default function PresupuestosPage() {
         {/* Acciones — siempre visibles en la cabecera */}
         <div className="flex flex-wrap gap-2 shrink-0">
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-            <Pencil className="h-3.5 w-3.5 mr-1.5" />
+            <Pencil className="h-3.5 w-3.5 sm:mr-1.5" />
             <span className="hidden sm:inline">Editar</span>
           </Button>
           <Button variant="outline" size="sm" onClick={handleWhatsApp}>
-            <Share2 className="h-3.5 w-3.5 mr-1.5" />
+            <Share2 className="h-3.5 w-3.5 sm:mr-1.5" />
             <span className="hidden sm:inline">WhatsApp</span>
           </Button>
           <Button variant="outline" size="sm" onClick={handleGmail}>
-            <Mail className="h-3.5 w-3.5 mr-1.5" />
+            <Mail className="h-3.5 w-3.5 sm:mr-1.5" />
             <span className="hidden sm:inline">Gmail</span>
           </Button>
           <PDFDownloadLink

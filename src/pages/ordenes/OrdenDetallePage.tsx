@@ -522,11 +522,11 @@ export default function OrdenDetallePage() {
         <h1 className="text-xl md:text-2xl font-bold tracking-tight">{order.order_number}</h1>
         <div className="flex gap-2 shrink-0">
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-            <Pencil className="h-3.5 w-3.5 mr-1.5" />
+            <Pencil className="h-3.5 w-3.5 sm:mr-1.5" />
             <span className="hidden sm:inline">Editar</span>
           </Button>
           <Button size="sm" onClick={() => navigate(`/presupuestos/nuevo?orden=${id}`)}>
-            <FileText className="h-3.5 w-3.5 mr-1.5" />
+            <FileText className="h-3.5 w-3.5 sm:mr-1.5" />
             <span className="hidden sm:inline">Presupuesto</span>
           </Button>
         </div>
@@ -547,7 +547,7 @@ export default function OrdenDetallePage() {
               <Tabs defaultValue="piezas">
                 <TabsList className="mb-4 w-full">
                   <TabsTrigger value="piezas" className="flex-1">Piezas</TabsTrigger>
-                  <TabsTrigger value="labor" className="flex-1">Mano de obra</TabsTrigger>
+                  <TabsTrigger value="labor" className="flex-1"><span className="hidden sm:inline">Mano de obra</span><span className="sm:hidden">M.obra</span></TabsTrigger>
                   <TabsTrigger value="extras" className="flex-1">Extras</TabsTrigger>
                   <TabsTrigger value="pagos" className="flex-1">Pagos</TabsTrigger>
                 </TabsList>

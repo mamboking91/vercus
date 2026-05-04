@@ -205,7 +205,8 @@ export default function CatalogoPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -257,6 +258,7 @@ export default function CatalogoPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
         </Card>
       )}
 
