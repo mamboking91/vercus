@@ -245,6 +245,20 @@ create policy "Usuarios autenticados acceden a payments" on payments
   using (auth.role() = 'authenticated')
   with check (auth.role() = 'authenticated');
 
+-- ─── WORK ORDER EXTRAS ─────────────────────────────────────
+
+create table work_order_extras (
+  id             uuid primary key default uuid_generate_v4(),
+  work_order_id  uuid references work_orders(id) on delete cascade not null,
+  description    text not null,
+  amount         numeric(10,2) not null default 0
+);
+
+alter table work_order_extras enable row level security;
+create policy "Usuarios autenticados acceden a work_order_extras" on work_order_extras
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
+
 -- ─── EXPENSES ──────────────────────────────────────────────
 
 create table expenses (

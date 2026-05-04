@@ -17,13 +17,14 @@ import { MachineTypeBadge } from '@/components/maquinas/MachineTypeBadge'
 import { useWorkOrders } from '@/hooks/useWorkOrders'
 import { useWorkOrderParts } from '@/hooks/useWorkOrderParts'
 import { useWorkOrderLabor } from '@/hooks/useWorkOrderLabor'
+import { useWorkOrderExtras } from '@/hooks/useWorkOrderExtras'
 import { usePayments } from '@/hooks/usePayments'
 import { useQuotes } from '@/hooks/useQuotes'
 import { supabase } from '@/lib/supabase'
 import { toast } from '@/hooks/use-toast'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
 import {
-  type WorkOrder, type WorkOrderPart, type WorkOrderLabor, type WorkOrderStatusLog, type QuoteStatus,
+  type WorkOrder, type WorkOrderPart, type WorkOrderLabor, type WorkOrderExtra, type WorkOrderStatusLog, type QuoteStatus,
   ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, ORDER_STATUS_FLOW,
 } from '@/types'
 
@@ -220,6 +221,136 @@ function ManoObraTab({ workOrderId }: { workOrderId: string }) {
   )
 }
 
+// ─── Tab: Extras ─────────────────────────────────────────────────────────────
+
+function ExtrasTab({ workOrderId }: { workOrderId: string }) {
+  const { extras, loading, addExtra, updateExtra, deleteExtra } = useWorkOrderExtras(workOrderId)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editing, setEditing] = useState<WorkOrderExtra | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<WorkOrderExtra | null>(null)
+  const [description, setDescription] = useState('')
+  const [amount, setAmount] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  function openNew() { setEditing(null); setDescription(''); setAmount(''); setDialogOpen(true) }
+  function openEdit(e: WorkOrderExtra) { setEditing(e); setDescription(e.description); setAmount(String(e.amount)); setDialogOpen(true) }
+  function closeDialog() { setDialogOpen(false); setEditing(null) }
+
+  async function handleSave(ev: React.FormEvent) {
+    ev.preventDefault()
+    const amt = parseFloat(amount)
+    if (!description.trim() || isNaN(amt)) return
+    setSaving(true)
+    const values = { description: description.trim(), amount: amt, work_order_id: workOrderId }
+    if (editing) {
+      const { error } = await updateExtra(editing.id, { description: values.description, amount: values.amount })
+      if (error) toast({ title: 'Error al guardar', description: error, variant: 'destructive' })
+    } else {
+      const { error } = await addExtra(values)
+      if (error) toast({ title: 'Error al añadir', description: error, variant: 'destructive' })
+    }
+    setSaving(false)
+    closeDialog()
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return
+    const { error } = await deleteExtra(deleteTarget.id)
+    if (error) toast({ title: 'Error al eliminar', description: error, variant: 'destructive' })
+    setDeleteTarget(null)
+  }
+
+  if (loading) return <div className="py-8 text-center text-sm text-muted-foreground">Cargando…</div>
+
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <Button size="sm" onClick={openNew}>
+          <Plus className="h-4 w-4 mr-1" />Añadir gasto
+        </Button>
+      </div>
+      {extras.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-8">Sin gastos adicionales.</p>
+      ) : (
+        <div className="space-y-2">
+          {extras.map(extra => (
+            <div key={extra.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate">{extra.description}</p>
+              </div>
+              <div className="flex items-center gap-2 ml-3 shrink-0">
+                <span className="text-sm font-semibold">{formatCurrency(extra.amount)}</span>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(extra)}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(extra)}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
+          <div className="text-right text-sm font-semibold pt-1 pr-1">
+            Subtotal: {formatCurrency(extras.reduce((s, e) => s + e.amount, 0))}
+          </div>
+        </div>
+      )}
+
+      <Dialog open={dialogOpen} onOpenChange={v => !v && closeDialog()}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{editing ? 'Editar gasto' : 'Añadir gasto'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSave} className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="extra-desc">Concepto <span className="text-destructive">*</span></Label>
+              <Input
+                id="extra-desc"
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder="Ej: Envío, DUA, Aranceles…"
+                required
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="extra-amount">Importe (€) <span className="text-destructive">*</span></Label>
+              <Input
+                id="extra-amount"
+                type="number"
+                min="0"
+                step="0.01"
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                placeholder="0.00"
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closeDialog}>Cancelar</Button>
+              <Button type="submit" disabled={saving || !description.trim() || !amount}>
+                {saving ? 'Guardando…' : editing ? 'Guardar' : 'Añadir'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={v => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar gasto?</AlertDialogTitle>
+            <AlertDialogDescription>Se eliminará <strong>{deleteTarget?.description}</strong> de la orden.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleDelete}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  )
+}
+
 // ─── Dialog: Editar datos de la orden ────────────────────────────────────────
 
 function EditOrderDialog({ order, open, onClose, onSave }: {
@@ -288,6 +419,7 @@ export default function OrdenDetallePage() {
   const { getOrder, updateOrder, updateOrderStatus } = useWorkOrders()
   const { totalParts } = useWorkOrderParts(id!)
   const { totalLabor } = useWorkOrderLabor(id!)
+  const { totalExtras } = useWorkOrderExtras(id!)
   const { totalPaid } = usePayments(id!)
   const { quotes } = useQuotes(id!)
 
@@ -352,7 +484,7 @@ export default function OrdenDetallePage() {
 
   const nextStatus = getNextStatus(order.status)
   const prevStatus = getPrevStatus(order.status)
-  const total = totalParts + totalLabor
+  const total = totalParts + totalLabor + totalExtras
   const pending = Math.max(0, total - totalPaid)
 
   return (
@@ -380,7 +512,7 @@ export default function OrdenDetallePage() {
       <div className="flex flex-col lg:grid lg:grid-cols-[1fr_300px] lg:items-start gap-5">
 
         {/* ── LEFT: Trabajo + Presupuestos ── */}
-        <div className="space-y-5">
+        <div className="space-y-5 min-w-0">
 
           {/* Tabs: Piezas / Mano de obra / Pagos */}
           <Card>
@@ -389,13 +521,15 @@ export default function OrdenDetallePage() {
             </CardHeader>
             <CardContent className="pt-4">
               <Tabs defaultValue="piezas">
-                <TabsList className="mb-4 w-full sm:w-auto">
-                  <TabsTrigger value="piezas" className="flex-1 sm:flex-none">Piezas</TabsTrigger>
-                  <TabsTrigger value="labor" className="flex-1 sm:flex-none">Mano de obra</TabsTrigger>
-                  <TabsTrigger value="pagos" className="flex-1 sm:flex-none">Pagos</TabsTrigger>
+                <TabsList className="mb-4 w-full">
+                  <TabsTrigger value="piezas" className="flex-1">Piezas</TabsTrigger>
+                  <TabsTrigger value="labor" className="flex-1">Mano de obra</TabsTrigger>
+                  <TabsTrigger value="extras" className="flex-1">Extras</TabsTrigger>
+                  <TabsTrigger value="pagos" className="flex-1">Pagos</TabsTrigger>
                 </TabsList>
                 <TabsContent value="piezas"><PiezasTab workOrderId={id!} /></TabsContent>
                 <TabsContent value="labor"><ManoObraTab workOrderId={id!} /></TabsContent>
+                <TabsContent value="extras"><ExtrasTab workOrderId={id!} /></TabsContent>
                 <TabsContent value="pagos"><PaymentsTab workOrderId={id!} totalAmount={total} /></TabsContent>
               </Tabs>
             </CardContent>
@@ -537,6 +671,12 @@ export default function OrdenDetallePage() {
                 <span className="text-muted-foreground">Mano de obra</span>
                 <span>{formatCurrency(totalLabor)}</span>
               </div>
+              {totalExtras > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Extras</span>
+                  <span>{formatCurrency(totalExtras)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-semibold text-sm border-t pt-2">
                 <span>Total bruto</span>
                 <span>{formatCurrency(total)}</span>

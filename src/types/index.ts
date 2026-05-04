@@ -158,6 +158,13 @@ export interface Payment {
   notes: string | null
 }
 
+export interface WorkOrderExtra {
+  id: string
+  work_order_id: string
+  description: string
+  amount: number
+}
+
 export interface Expense {
   id: string
   user_id: string
