@@ -25,7 +25,6 @@ export function CatalogSearchDialog({ open, onClose, onSelect }: Props) {
     let dbQuery = supabase
       .from('parts_catalog')
       .select('*')
-      .eq('user_id', user.id)
       .order('description')
       .limit(20)
 

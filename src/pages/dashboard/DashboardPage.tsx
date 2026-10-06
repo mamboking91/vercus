@@ -41,24 +41,25 @@ export default function DashboardPage() {
 
   async function fetchDashboard() {
     setLoading(true)
-    const userId = user!.id
+    // Fechas locales (toISOString pasaría a UTC y desplazaría un día)
     const now = new Date()
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+    const monthStart = `${month}-01`
+    const monthEnd = `${month}-${lastDay}`
 
+    // Sin filtrar por user_id: los datos del taller son compartidos (igual que el resto de páginas)
     const [ordersRes, recentRes, paymentsRes] = await Promise.all([
       // All non-delivered orders
       supabase
         .from('work_orders')
         .select('id, status')
-        .eq('user_id', userId)
         .neq('status', 'entregada'),
 
       // 8 most recent orders with client + machine join
       supabase
         .from('work_orders')
         .select('*, client:clients(id, name), machine:machines(id, brand, model, type)')
-        .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(8),
 
